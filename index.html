@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Flow Connect</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        body { background: #0f172a; font-family: sans-serif; overflow: hidden; color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        
+        #header { height: 60px; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 20px; font-weight: bold; color: #facc15; }
+
+        #game-container { position: relative; width: 320px; height: 320px; background: #1e293b; border-radius: 8px; padding: 10px; touch-action: none; }
+        #grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); width: 100%; height: 100%; gap: 5px; }
+        .cell { background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; position: relative; z-index: 2; }
+        .dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+
+        canvas { position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 1; }
+
+        #footer { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .btn { padding: 12px 30px; border-radius: 25px; border: none; background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="header">Stage: <span id="ui-stage">1</span></div>
+    
+    <div id="game-container">
+        <div id="grid"></div>
+        <canvas id="line-canvas"></canvas>
+    </div>
+
+    <div id="footer">
+        <div id="status">全てのペアを繋ごう！</div>
+        <button class="btn" onclick="resetStage()">リセット</button>
+    </div>
+
+    <script>
+        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#facc15', '#a855f7'];
+        let gridSize = 5;
+        let stage = 1;
+        let dots = []; // {x, y, val, color}
+        let currentPath = [];
+        let completedPaths = []; // Array of arrays of {x, y}
+        let isDragging = false;
+        let activeColor = null;
+
+        const container = document.getElementById('game-container');
+        const gridEl = document.getElementById('grid');
+        const canvas = document.getElementById('line-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function initStage() {
+            // ステージ1の固定配置例（本来はここで自動生成）
+            dots = [
+                {x: 0, y: 0, val: 1, color: colors[0]}, {x: 4, y: 0, val: 1, color: colors[0]},
+                {x: 0, y: 4, val: 2, color: colors[1]}, {x: 4, y: 4, val: 2, color: colors[1]},
+                {x: 2, y: 1, val: 3, color: colors[2]}, {x: 2, y: 3, val: 3, color: colors[2]}
+            ];
+            completedPaths = [];
+            currentPath = [];
+            renderGrid();
+            resizeCanvas();
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    const dot = dots.find(d => d.x === x && d.y === y);
+                    if (dot) {
+                        const dotEl = document.createElement('div');
+                        dotEl.className = 'dot';
+                        dotEl.style.backgroundColor = dot.color;
+                        dotEl.innerText = dot.val;
+                        cell.appendChild(dotEl);
+                    }
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = 300;
+            canvas.height = 300;
+            drawAll();
+        }
+
+        function getCellFromPos(e) {
+            const rect = gridEl.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            const x = Math.floor((touch.clientX - rect.left) / (rect.width / gridSize));
+            const y = Math.floor((touch.clientY - rect.top) / (rect.height / gridSize));
+            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) return {x, y};
+            return null;
+        }
+
+        container.addEventListener('touchstart', startPath);
+        container.addEventListener('touchmove', movePath);
+        window.addEventListener('touchend', endPath);
+
+        function startPath(e) {
+            const pos = getCellFromPos(e);
+            if (!pos) return;
+            const startDot = dots.find(d => d.x === pos.x && d.y === pos.y);
+            if (startDot) {
+                isDragging = true;
+                activeColor = startDot.color;
+                // 既存の同じ色のパスを消す
+                completedPaths = completedPaths.filter(p => dots.find(d => d.x === p[0].x && d.y === p[0].y).color !== activeColor);
+                currentPath = [pos];
+                drawAll();
+            }
+        }
+
+        function movePath(e) {
+            if (!isDragging) return;
+            const pos = getCellFromPos(e);
+            if (!pos) return;
+
+            const lastPos = currentPath[currentPath.length - 1];
+            if (pos.x === lastPos.x && pos.y === lastPos.y) return;
+
+            // 隣接チェック
+            const dx = Math.abs(pos.x - lastPos.x);
+            const dy = Math.abs(pos.y - lastPos.y);
+            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                // 他の完成済みパスとの衝突チェック
+                const hitOther = completedPaths.some(path => path.some(p => p.x === pos.x && p.y === pos.y));
+                if (hitOther) return;
+
+                // 自分のパス内での戻り
+                if (currentPath.length > 1) {
+                    const secondLast = currentPath[currentPath.length - 2];
+                    if (pos.x === secondLast.x && pos.y === secondLast.y) {
+                        currentPath.pop();
+                        drawAll();
+                        return;
+                    }
+                }
+
+                // 自分のパスとの衝突
+                if (currentPath.some(p => p.x === pos.x && p.y === pos.y)) return;
+
+                currentPath.push(pos);
+
+                // ゴール判定
+                const goalDot = dots.find(d => d.x === pos.x && d.y === pos.y);
+                if (goalDot) {
+                    if (goalDot.color === activeColor && currentPath.length > 1) {
+                        completedPaths.push([...currentPath]);
+                        isDragging = false;
+                        checkClear();
+                    } else {
+                        // 違う色のドットにぶつかったらストップ
+                        isDragging = false;
+                    }
+                }
+                drawAll();
+            }
+        }
+
+        function endPath() {
+            isDragging = false;
+            currentPath = [];
+            drawAll();
+        }
+
+        function drawAll() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cellSize = canvas.width / gridSize;
+
+            // 完成した線を描画
+            completedPaths.forEach(path => drawPath(path, dots.find(d => d.x === path[0].x && d.y === path[0].y).color));
+            // 現在引き中の線を描画
+            if (currentPath.length > 0) drawPath(currentPath, activeColor);
+        }
+
+        function drawPath(path, color) {
+            const cellSize = canvas.width / gridSize;
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            path.forEach((p, i) => {
+                const x = p.x * cellSize + cellSize / 2;
+                const y = p.y * cellSize + cellSize / 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
+
+        function checkClear() {
+            const totalDots = dots.length / 2;
+            if (completedPaths.length === totalDots) {
+                // さらに全マス埋まっているかの判定を入れるとより本格的
+                document.getElementById('status').innerText = "CLEAR! お見事！";
+            }
+        }
+
+        function resetStage() {
+            initStage();
+            document.getElementById('status').innerText = "全てのペアを繋ごう！";
+        }
+
+        initStage();
+    </script>
+</body>
+</html>
