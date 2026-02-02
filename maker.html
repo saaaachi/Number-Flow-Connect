@@ -2,48 +2,62 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Flow Connect ステージメーカー</title>
+    <title>Flow Connect ステージメーカー EX</title>
     <style>
         body { background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        #maker-grid { display: grid; background: #1e293b; gap: 4px; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
-        .cell { width: 50px; height: 50px; background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; }
+        #maker-grid { display: grid; background: #1e293b; gap: 4px; padding: 10px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .cell { width: 50px; height: 50px; background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; position: relative; }
         .cell:hover { background: #475569; }
-        .controls { background: #1e293b; padding: 20px; border-radius: 12px; width: 350px; }
-        select, input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; }
+        .controls { background: #1e293b; padding: 20px; border-radius: 12px; width: 350px; border: 1px solid #334155; }
+        select, input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; font-size: 16px; }
         button { background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
-        #output { width: 100%; height: 100px; margin-top: 10px; background: #000; color: #0f0; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 5px; overflow-y: auto; word-break: break-all; }
-        .dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #output { width: 100%; height: 120px; margin-top: 10px; background: #000; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 5px; overflow-y: auto; word-break: break-all; }
+        .dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.3); text-shadow: 1px 1px 2px black; }
+        .rock { font-size: 24px; }
+        .active-num { color: #facc15; font-size: 14px; margin-bottom: 5px; text-align: center; }
     </style>
 </head>
 <body>
-    <h2>🎨 ステージメーカー</h2>
+    <h2 style="color:#facc15;">🎨 ステージメーカー EX</h2>
     
     <div class="controls">
-        サイズ選択: 
+        <div class="active-num">現在の選択: <span id="current-mode">数字 1</span></div>
+        盤面サイズ: 
         <select id="size-select" onchange="initGrid()">
             <option value="5">5 x 5</option>
             <option value="6">6 x 6</option>
             <option value="7">7 x 7</option>
             <option value="8">8 x 8</option>
         </select>
-        配置する数字: <input type="number" id="num-input" value="1" min="1">
-        配置する色: <select id="color-select">
-            <option value="#ef4444">Red</option>
-            <option value="#3b82f6">Blue</option>
-            <option value="#22c55e">Green</option>
-            <option value="#facc15">Yellow</option>
-            <option value="#a855f7">Purple</option>
-        </select>
+        配置する数字 (0は岩🪨): 
+        <input type="number" id="num-input" value="1" min="0" max="20" onchange="updateModeText()">
+        
         <button onclick="copyToClipboard()">コードをコピー</button>
+        <button onclick="initGrid()" style="background:#64748b; margin-top:10px;">全クリア</button>
     </div>
 
     <div id="maker-grid" style="margin-top:20px;"></div>
 
-    <div>生成されたコード:</div>
+    <div style="font-size:12px; color:#94a3b8;">生成されたコード:</div>
     <div id="output">[]</div>
 
     <script>
+        // 20色＋岩(0)の色設定
+        const colorPalette = {
+            0: "#4b5563", // 岩（グレー）
+            1: "#ef4444", 2: "#3b82f6", 3: "#22c55e", 4: "#facc15", 5: "#a855f7",
+            6: "#ec4899", 7: "#06b6d4", 8: "#f97316", 9: "#8b5cf6", 10: "#10b981",
+            11: "#fb7185", 12: "#6366f1", 13: "#fbbf24", 14: "#2dd4bf", 15: "#c026d3",
+            16: "#94a3b8", 17: "#b91c1c", 18: "#1e3a8a", 19: "#14532d", 20: "#78350f"
+        };
+
         let dots = [];
+
+        function updateModeText() {
+            const val = document.getElementById('num-input').value;
+            document.getElementById('current-mode').innerText = val == 0 ? "岩 🪨" : "数字 " + val;
+        }
+
         function initGrid() {
             const size = document.getElementById('size-select').value;
             const grid = document.getElementById('maker-grid');
@@ -64,32 +78,42 @@
 
         function placeDot(x, y, el) {
             const val = parseInt(document.getElementById('num-input').value);
-            const color = document.getElementById('color-select').value;
+            const color = colorPalette[val] || "#ffffff";
 
-            // 既に同じ座標にあれば削除
-            dots = dots.filter(d => !(d.x === x && d.y === y));
-            
-            // 新しく追加
-            dots.push({x, y, val, color});
-            
-            // 表示更新
-            el.innerHTML = `<div class="dot" style="background:${color}">${val}</div>`;
+            // 既存のドットを削除（同じ場所を再度クリックしたら消えるトグル式）
+            const existingIndex = dots.findIndex(d => d.x === x && d.y === y);
+            if (existingIndex !== -1) {
+                const existingDot = dots[existingIndex];
+                dots.splice(existingIndex, 1);
+                el.innerHTML = '';
+                // もし違う数字を置こうとしてたなら、新しく配置
+                if (existingDot.val !== val) {
+                    addDot(x, y, val, color, el);
+                }
+            } else {
+                addDot(x, y, val, color, el);
+            }
             updateOutput();
+        }
+
+        function addDot(x, y, val, color, el) {
+            dots.push({x, y, val, color});
+            if (val === 0) {
+                el.innerHTML = `<span class="rock">🪨</span>`;
+            } else {
+                el.innerHTML = `<div class="dot" style="background:${color}">${val}</div>`;
+            }
         }
 
         function updateOutput() {
             const size = document.getElementById('size-select').value;
-            // ゲーム本体に貼り付けやすい形式で出力
-            const result = {
-                size: parseInt(size),
-                dots: dots
-            };
+            const result = { size: parseInt(size), dots: dots };
             document.getElementById('output').innerText = JSON.stringify(result);
         }
 
         function copyToClipboard() {
             const text = document.getElementById('output').innerText;
-            navigator.clipboard.writeText(text).then(() => alert("コピーしました！ゲームのstageDataに貼り付けてね"));
+            navigator.clipboard.writeText(text).then(() => alert("コードをコピーしました！"));
         }
 
         initGrid();
