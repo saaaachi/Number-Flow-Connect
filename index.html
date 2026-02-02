@@ -3,219 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Number Flow Connect - Global -</title>
+    <title>Number Flow Connect</title>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         
-        /* UI Header */
-        #header { width: 100%; padding: 10px; background: var(--panel); border-bottom: 2px solid #334155; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .top-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
-        .lang-btns { display: flex; gap: 5px; }
-        .lang-btn { padding: 4px 8px; font-size: 10px; border-radius: 4px; border: 1px solid #475569; background: #334155; color: white; }
-        .active-lang { background: var(--accent); border-color: white; }
+        /* 広告エリア */
+        #ad-container { width: 100%; height: 60px; background: #000; display: flex; justify-content: center; align-items: center; overflow: hidden; z-index: 200; }
+        iframe.ad-frame { width: 100%; height: 100%; border: none; }
 
-        /* Game Board */
-        #game-outer { position: relative; margin-top: 20px; padding: 8px; background: var(--panel); border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #grid { display: grid; width: 300px; height: 300px; gap: 4px; position: relative; }
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
-        .cell { background: #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
-        .dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; z-index: 10; border: 2px solid rgba(255,255,255,0.3); }
-        .rock { font-size: 24px; z-index: 10; }
+        /* スタート・リザルト画面共通 */
+        .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        h1 { font-size: 28px; color: #facc15; margin-bottom: 30px; }
+        .menu-btn { width: 240px; padding: 15px; margin: 10px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; font-size: 18px; cursor: pointer; }
+        .other-game { font-size: 14px; color: #94a3b8; text-decoration: underline; margin-top: 20px; }
 
-        /* Footer & Buttons */
-        #footer { margin-top: auto; width: 100%; padding: 15px; background: var(--panel); border-top: 2px solid #334155; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .stats { font-size: 14px; color: #facc15; font-weight: bold; display: flex; gap: 20px; }
-        .btn-group { display: flex; gap: 10px; width: 100%; justify-content: center; }
-        .btn { padding: 10px 15px; border-radius: 10px; border: none; background: #334155; color: white; font-weight: bold; font-size: 13px; flex: 1; max-width: 100px; cursor: pointer; }
-        .btn-main { background: #22c55e; }
-        .btn-shop { background: #8b5cf6; }
+        /* メインゲームレイアウト */
+        #game-content { display: none; flex-direction: column; align-items: center; width: 100%; flex: 1; }
+        #header { width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        #game-outer { position: relative; padding: 15px; background: var(--panel); border-radius: 15px; margin: 20px 0; touch-action: none; }
+        #grid { display: grid; width: 300px; height: 300px; gap: 5px; position: relative; z-index: 1; }
+        canvas { position: absolute; top: 15px; left: 15px; pointer-events: none; z-index: 5; } /* 線を背景の上、数字の下に */
+        
+        .cell { background: #334155; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; z-index: 10; position: relative; border: 2px solid rgba(255,255,255,0.4); }
+        .rock { font-size: 26px; z-index: 10; position: relative; }
 
-        /* Overlays */
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.95); z-index: 100; display: none; flex-direction: column; align-items: center; padding: 40px 20px; }
-        .shop-card { width: 100%; background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
+        .stats-bar { font-size: 16px; color: #facc15; font-weight: bold; display: flex; gap: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="header">
-        <div class="top-row">
-            <div id="ui-stage-label" style="font-weight: bold;">Stage: <span id="ui-stage">1</span></div>
-            <div class="lang-btns">
-                <button class="lang-btn active-lang" onclick="setLang('ja')">JP</button>
-                <button class="lang-btn" onclick="setLang('en')">EN</button>
-                <button class="lang-btn" onclick="setLang('ko')">KR</button>
-            </div>
-        </div>
-        <div class="stats">
-            <span>💰 <span id="ui-coins">0</span></span>
-            <span>✨ <span id="ui-score">0</span></span>
-        </div>
+    <div id="ad-top" class="ad-container"></div>
+
+    <div id="start-screen" class="screen">
+        <h1>Number Flow<br>Connect</h1>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">※LINEの方は「ブラウザで開く」を推奨</p>
+        <button class="menu-btn" onclick="startGame()" style="background:#22c55e;">START</button>
+        <button class="menu-btn" onclick="showShop()">SHOP</button>
+        <a href="https://saaaachi.github.io/Sort-Master/" class="other-game" target="_blank">Other Games: Sort Master</a>
+        <div class="stats-bar" style="margin-top:30px;">💰 <span id="start-coins">0</span></div>
     </div>
 
-    <div id="game-outer">
-        <div id="grid"></div>
-        <canvas id="line-canvas"></canvas>
+    <div id="shop-screen" class="screen" style="display:none;">
+        <h1>SHOP</h1>
+        <div id="shop-items" style="width:100%; max-width:300px;"></div>
+        <button class="menu-btn" onclick="backToStart()" style="background:#64748b;">BACK</button>
     </div>
 
-    <div id="footer">
-        <div id="ui-msg" style="font-size: 12px; color: #94a3b8;">---</div>
-        <div class="btn-group">
-            <button class="btn" onclick="resetStage()" id="btn-reset">RESET</button>
-            <button class="btn btn-shop" onclick="toggleOverlay('shop', true)" id="btn-shop">SHOP</button>
-            <button class="btn btn-main" onclick="toggleOverlay('creator', true)" id="btn-creator">MAKER</button>
-        </div>
+    <div id="result-screen" class="screen" style="display:none;">
+        <h1 id="res-title">CLEARED!</h1>
+        <div style="font-size:24px; margin-bottom:20px;">💰 +<span id="res-coins">0</span></div>
+        <button class="menu-btn" onclick="startGame()" id="next-btn" style="background:#22c55e;">NEXT STAGE</button>
+        <button class="menu-btn" onclick="backToStart()" style="background:#64748b;">HOME</button>
     </div>
 
-    <div id="shop-overlay" class="overlay">
-        <h2 id="shop-title" style="margin-bottom:20px;">SHOP</h2>
-        <div class="shop-card">
-            <div><span id="item-ghost-name">Ghost</span> (3000)</div>
-            <button class="btn btn-shop" onclick="buyItem('ghost')">BUY</button>
+    <div id="game-content">
+        <div id="header">
+            <div style="font-weight:bold;">Stage: <span id="ui-stage">1</span></div>
+            <div class="stats-bar">💰 <span id="ui-coins">0</span></div>
         </div>
-        <div class="shop-card">
-            <div><span id="item-expand-name">Expand</span> (8000)</div>
-            <button class="btn btn-shop" onclick="buyItem('expand')">BUY</button>
+        <div id="game-outer">
+            <div id="grid"></div>
+            <canvas id="line-canvas"></canvas>
         </div>
-        <button class="btn" style="margin-top:20px; background:#ef4444;" onclick="toggleOverlay('shop', false)">CLOSE</button>
+        <button class="menu-btn" onclick="initStage()" style="background:#ef4444; width:120px; padding:10px; font-size:14px;">RESET</button>
     </div>
 
-    <div id="creator-overlay" class="overlay">
-        <h2 id="creator-title" style="margin-bottom:20px;">MAKER UNLOCK</h2>
-        <div id="creator-locked">
-            <p style="text-align:center; margin-bottom:20px;" id="creator-msg">Unlock Stage Maker with 5000 coins!</p>
-            <button class="btn btn-main" style="max-width:200px;" onclick="unlockCreator()">UNLOCK (5000)</button>
-        </div>
-        <div id="creator-unlocked" style="display:none; text-align:center;">
-            <p style="margin-bottom:10px;">Paste ID to Play</p>
-            <textarea id="import-id" style="width:100%; height:80px; background:#000; color:#0f0; padding:10px; margin-bottom:10px;"></textarea>
-            <button class="btn btn-main" onclick="loadCustomStage()">PLAY ID</button>
-        </div>
-        <button class="btn" style="margin-top:20px; background:#ef4444;" onclick="toggleOverlay('creator', false)">CLOSE</button>
+    <div id="ad-bottom" class="ad-container"></div>
+
+    <div id="ad-large-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:1000; background:#000;">
+        <iframe id="ad-large-frame" style="width:100%; height:100%; border:none;"></iframe>
+        <button onclick="closeLargeAd()" style="position:absolute; top:20px; right:20px; padding:10px; background:rgba(255,255,255,0.5); border:none; border-radius:5px;">Close [X]</button>
     </div>
 
     <script>
-        // --- Data ---
+        // --- データ設定 ---
         const allStages = {
             1: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":0,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":0,"y":4,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"}]},
             2: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":1,"val":3,"color":"#22c55e"},{"x":1,"y":3,"val":3,"color":"#22c55e"}]},
             3: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":4,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":2,"y":1,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"}]},
             4: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":4,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":3,"color":"#22c55e"},{"x":1,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":4,"color":"#facc15"},{"x":3,"y":2,"val":4,"color":"#facc15"}]},
-            5: {"size":5,"dots":[{"x":1,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":3,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":2,"y":0,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":4,"color":"#facc15"}]},
-            6: {"size":5,"dots":[{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":3,"y":4,"val":1,"color":"#ef4444"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"},{"x":1,"y":1,"val":4,"color":"#facc15"},{"x":2,"y":1,"val":4,"color":"#facc15"},{"x":3,"y":1,"val":5,"color":"#a855f7"},{"x":4,"y":1,"val":5,"color":"#a855f7"}]}
+            5: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":2,"y":2,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":3,"color":"#22c55e"},{"x":4,"y":3,"val":3,"color":"#22c55e"},{"x":0,"y":3,"val":4,"color":"#facc15"},{"x":4,"y":4,"val":4,"color":"#facc15"}]},
+            6: {"size":5,"dots":[{"x":1,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":3,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":2,"y":0,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":4,"color":"#facc15"}]},
+            7: {"size":5,"dots":[{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":3,"y":4,"val":1,"color":"#ef4444"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"},{"x":1,"y":1,"val":4,"color":"#facc15"},{"x":2,"y":1,"val":4,"color":"#facc15"},{"x":3,"y":1,"val":5,"color":"#a855f7"},{"x":4,"y":1,"val":5,"color":"#a855f7"}]}
         };
 
-        const i18n = {
-            ja: { stage: "ステージ", score: "スコア", msg: "同じ数字を繋いでね！", shop: "ショップ", maker: "メーカー解放", close: "閉じる", buy: "購入", locked: "5000コインでメーカーを解放しよう！", ghost: "すり抜け", expand: "盤面拡大", clear: "クリア！" },
-            en: { stage: "Stage", score: "Score", msg: "Connect the same numbers!", shop: "Shop", maker: "Unlock Maker", close: "Close", buy: "Buy", locked: "Unlock Maker for 5000 coins!", ghost: "Ghost", expand: "Expand Grid", clear: "Cleared!" },
-            ko: { stage: "스테이지", score: "점수", msg: "같은 숫자를 연결하세요!", shop: "상점", maker: "메이커 해제", close: "닫기", buy: "구매", locked: "5000코인으로 메이커를 해제하세요!", ghost: "유령", expand: "보드 확장", clear: "클리어!" }
-        };
+        let user = { coins: 0, sLv: 1, unlockedMaker: false, clearCount: 0 };
+        let dots = [], completedPaths = [], currentPath = [], gridSize = 5, isDragging = false, activeColor = null;
 
-        // --- State ---
-        let user = { coins: 0, sLv: 1, lang: 'ja', makerUnlocked: false, ghost: 0 };
-        let currentStageData = null;
-        let dots = [], completedPaths = [], currentPath = [], activeColor = null;
-        let isDragging = false, gridSize = 5, isCustom = false;
-
-        const gridEl = document.getElementById('grid');
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
 
-        // --- Logic ---
+        // --- 初期化 & セーブ ---
         function load() {
-            const saved = localStorage.getItem('flow_global_save');
+            const saved = localStorage.getItem('flow_final_save');
             if(saved) user = Object.assign(user, JSON.parse(saved));
-            setLang(user.lang);
+            updateStats();
+            startAdTimer();
+        }
+        function save() { localStorage.setItem('flow_final_save', JSON.stringify(user)); }
+        function updateStats() {
+            document.getElementById('start-coins').innerText = user.coins;
+            document.getElementById('ui-coins').innerText = user.coins;
+            document.getElementById('ui-stage').innerText = user.sLv;
+        }
+
+        // --- 画面遷移 ---
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('game-content').style.display = 'flex';
             initStage();
         }
-
-        function save() { localStorage.setItem('flow_global_save', JSON.stringify(user)); }
-
-        function setLang(l) {
-            user.lang = l;
-            const t = i18n[l];
-            document.getElementById('ui-stage-label').firstChild.textContent = t.stage + ": ";
-            document.getElementById('ui-msg').innerText = t.msg;
-            document.getElementById('btn-reset').innerText = "RESET";
-            document.getElementById('btn-shop').innerText = t.shop;
-            document.getElementById('btn-creator').innerText = user.makerUnlocked ? "MAKER" : t.maker;
-            document.getElementById('item-ghost-name').innerText = t.ghost;
-            document.getElementById('item-expand-name').innerText = t.expand;
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active-lang'));
-            event?.target?.classList?.add('active-lang');
-            save();
+        function backToStart() {
+            document.getElementById('shop-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('game-content').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            updateStats();
+        }
+        function showShop() {
+            document.getElementById('start-screen').style.display = 'none';
+            const shopDiv = document.getElementById('shop-items');
+            shopDiv.innerHTML = `
+                <div class="menu-btn" style="background:#8b5cf6; font-size:14px;" onclick="buyMaker()">
+                    ${user.unlockedMaker ? 'MAKER: UNLOCKED' : 'UNLOCK MAKER (5000)'}
+                </div>
+                <div class="menu-btn" style="background:#6366f1; font-size:14px;">GHOST MODE (COMING SOON)</div>
+            `;
+            document.getElementById('shop-screen').style.display = 'flex';
         }
 
-        function initStage(customData = null) {
-            isCustom = !!customData;
-            currentStageData = customData || allStages[user.sLv] || allStages[1];
-            gridSize = currentStageData.size;
-            dots = currentStageData.dots;
-            completedPaths = [];
-            currentPath = [];
+        function buyMaker() {
+            if(user.unlockedMaker) { location.href = 'maker.html'; return; }
+            if(user.coins >= 5000) {
+                user.coins -= 5000; user.unlockedMaker = true;
+                save(); showShop();
+            } else { alert("Not enough coins!"); }
+        }
+
+        // --- ゲームロジック ---
+        function initStage() {
+            const data = allStages[user.sLv] || allStages[1];
+            gridSize = data.size;
+            dots = data.dots;
+            completedPaths = []; currentPath = [];
+            const grid = document.getElementById('grid');
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            grid.innerHTML = '';
             
-            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            gridEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-            renderGrid();
-            resizeCanvas();
-            updateUI();
-        }
-
-        function renderGrid() {
-            gridEl.innerHTML = '';
             dots.forEach(d => {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 cell.style.gridColumnStart = d.x + 1;
                 cell.style.gridRowStart = d.y + 1;
-                if(d.val === 0) {
-                    cell.innerHTML = '<span class="rock">🪨</span>';
-                } else {
-                    const dot = document.createElement('div');
-                    dot.className = 'dot';
-                    dot.style.backgroundColor = d.color;
-                    dot.innerText = d.val;
-                    cell.appendChild(dot);
-                }
-                gridEl.appendChild(cell);
+                if(d.val === 0) cell.innerHTML = '<span class="rock">🪨</span>';
+                else cell.innerHTML = `<div class="dot" style="background:${d.color}">${d.val}</div>`;
+                grid.appendChild(cell);
             });
-            // 空セルの補完
             for(let i=0; i<gridSize*gridSize; i++) {
-                const x = i % gridSize, y = Math.floor(i / gridSize);
+                const x = i%gridSize, y = Math.floor(i/gridSize);
                 if(!dots.find(d => d.x === x && d.y === y)) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    gridEl.appendChild(cell);
+                    const cell = document.createElement('div'); cell.className = 'cell'; grid.appendChild(cell);
                 }
             }
+            resizeCanvas();
         }
 
-        function updateUI() {
-            document.getElementById('ui-stage').innerText = isCustom ? "???" : user.sLv;
-            document.getElementById('ui-coins').innerText = user.coins;
-            document.getElementById('ui-score').innerText = calculateScore();
-            document.getElementById('creator-locked').style.display = user.makerUnlocked ? 'none' : 'block';
-            document.getElementById('creator-unlocked').style.display = user.makerUnlocked ? 'block' : 'none';
+        function resizeCanvas() {
+            canvas.width = 300; canvas.height = 300;
+            draw();
         }
 
-        function calculateScore() {
-            let base = completedPaths.length * 100;
-            let bonus = 0;
-            completedPaths.forEach(p => bonus += (p.length - 2) * 10);
-            return base + bonus;
-        }
-
-        // --- Interaction ---
+        // --- タッチ操作 (改善版) ---
         function getPos(e) {
-            const rect = gridEl.getBoundingClientRect();
+            const rect = document.getElementById('grid').getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
             const x = Math.floor((touch.clientX - rect.left) / (rect.width / gridSize));
             const y = Math.floor((touch.clientY - rect.top) / (rect.height / gridSize));
             return (x>=0 && x<gridSize && y>=0 && y<gridSize) ? {x, y} : null;
         }
 
-        gridEl.addEventListener('touchstart', (e) => {
+        document.getElementById('grid').addEventListener('touchstart', (e) => {
             const pos = getPos(e); if(!pos) return;
             const dot = dots.find(d => d.x === pos.x && d.y === pos.y && d.val !== 0);
             if(dot) {
@@ -226,38 +198,32 @@
             }
         });
 
-        gridEl.addEventListener('touchmove', (e) => {
+        document.getElementById('grid').addEventListener('touchmove', (e) => {
             if(!isDragging) return;
             const pos = getPos(e); if(!pos) return;
             const last = currentPath[currentPath.length-1];
             if(pos.x === last.x && pos.y === last.y) return;
-
             if(Math.abs(pos.x - last.x) + Math.abs(pos.y - last.y) === 1) {
                 if(dots.find(d => d.x === pos.x && d.y === pos.y && d.val === 0)) return;
-                if(completedPaths.some(path => path.some(p => p.x === pos.x && p.y === pos.y))) return;
-                
-                if(currentPath.length > 1 && pos.x === currentPath[currentPath.length-2].x && pos.y === currentPath[currentPath.length-2].y) {
-                    currentPath.pop();
-                } else if(!currentPath.some(p => p.x === pos.x && p.y === pos.y)) {
+                if(completedPaths.some(p => p.some(pt => pt.x === pos.x && pt.y === pos.y))) return;
+                if(currentPath.some(pt => pt.x === pos.x && pt.y === pos.y)) {
+                    if(currentPath.length > 1 && pos.x === currentPath[currentPath.length-2].x && pos.y === currentPath[currentPath.length-2].y) currentPath.pop();
+                } else {
                     currentPath.push(pos);
                     const goal = dots.find(d => d.x === pos.x && d.y === pos.y);
                     if(goal) {
-                        if(goal.color === activeColor) {
-                            completedPaths.push([...currentPath]);
-                            isDragging = false;
-                            checkClear();
-                        } else { isDragging = false; }
+                        if(goal.color === activeColor) { completedPaths.push([...currentPath]); isDragging = false; checkClear(); }
+                        else isDragging = false;
                     }
                 }
                 draw();
             }
         });
-
         window.addEventListener('touchend', () => { isDragging = false; currentPath = []; draw(); });
 
         function draw() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            const s = canvas.width / gridSize;
+            ctx.clearRect(0,0,300,300);
+            const s = 300 / gridSize;
             const drawP = (p, c) => {
                 ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 p.forEach((pt, i) => {
@@ -272,43 +238,45 @@
         }
 
         function checkClear() {
-            const totalPairs = dots.filter(d => d.val !== 0).length / 2;
-            if(completedPaths.length === totalPairs) {
-                const reward = calculateScore();
-                user.coins += reward;
-                document.getElementById('ui-msg').innerText = i18n[user.lang].clear + " +💰" + reward;
-                if(!isCustom) user.sLv++;
-                save(); updateUI();
-                setTimeout(() => initStage(), 1500);
+            if(completedPaths.length === dots.filter(d => d.val !== 0).length / 2) {
+                let bonus = 0; completedPaths.forEach(p => bonus += (p.length-2)*10);
+                const total = (completedPaths.length * 100) + bonus;
+                user.coins += total; user.clearCount++;
+                const currentLv = user.sLv;
+                if(allStages[user.sLv + 1]) user.sLv++;
+                save();
+                setTimeout(() => showResult(total, currentLv), 500);
             }
         }
 
-        // --- Overlays ---
-        function toggleOverlay(id, show) { document.getElementById(id + '-overlay').style.display = show ? 'flex' : 'none'; }
-        
-        function buyItem(type) {
-            const price = type === 'ghost' ? 3000 : 8000;
-            if(user.coins >= price) { user.coins -= price; save(); updateUI(); alert("Bought!"); }
-            else alert("Need more coins!");
+        function showResult(gain, lv) {
+            document.getElementById('res-coins').innerText = gain;
+            document.getElementById('res-title').innerText = "STAGE " + lv + " CLEAR!";
+            document.getElementById('game-content').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'flex';
+            if(user.clearCount === 2 || user.clearCount % 5 === 0) showLargeAd();
         }
 
-        function unlockCreator() {
-            if(user.coins >= 5000) {
-                user.coins -= 5000; user.makerUnlocked = true;
-                save(); updateUI(); setLang(user.lang);
-            } else alert("Need more coins!");
+        // --- 広告ロジック ---
+        function startAdTimer() {
+            let isTop = true;
+            setInterval(() => {
+                const target = isTop ? 'ad-top' : 'ad-bottom';
+                const other = isTop ? 'ad-bottom' : 'ad-top';
+                document.getElementById(target).innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
+                document.getElementById(other).innerHTML = '';
+                isTop = !isTop;
+            }, 30000);
+            document.getElementById('ad-top').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
         }
-
-        function loadCustomStage() {
-            try {
-                const data = JSON.parse(document.getElementById('import-id').value);
-                initStage(data);
-                toggleOverlay('creator', false);
-            } catch(e) { alert("Invalid ID"); }
+        function showLargeAd() {
+            document.getElementById('ad-large-frame').src = 'ad.large.html';
+            document.getElementById('ad-large-overlay').style.display = 'block';
         }
-
-        function resizeCanvas() { canvas.width = 300; canvas.height = 300; draw(); }
-        function resetStage() { initStage(isCustom ? currentStageData : null); }
+        function closeLargeAd() {
+            document.getElementById('ad-large-overlay').style.display = 'none';
+            document.getElementById('ad-large-frame').src = '';
+        }
 
         window.onload = load;
     </script>
