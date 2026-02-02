@@ -10,28 +10,32 @@
         body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         
         /* 広告エリア */
-        #ad-container { width: 100%; height: 60px; background: #000; display: flex; justify-content: center; align-items: center; overflow: hidden; z-index: 200; }
+        .ad-container { width: 100%; height: 60px; background: #000; display: flex; justify-content: center; align-items: center; z-index: 200; transition: opacity 0.5s; }
         iframe.ad-frame { width: 100%; height: 100%; border: none; }
 
-        /* スタート・リザルト画面共通 */
+        /* スタート・リザルト・ショップ小窓 */
         .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        h1 { font-size: 28px; color: #facc15; margin-bottom: 30px; }
-        .menu-btn { width: 240px; padding: 15px; margin: 10px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; font-size: 18px; cursor: pointer; }
-        .other-game { font-size: 14px; color: #94a3b8; text-decoration: underline; margin-top: 20px; }
-
-        /* メインゲームレイアウト */
-        #game-content { display: none; flex-direction: column; align-items: center; width: 100%; flex: 1; }
-        #header { width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: var(--panel); border: 2px solid var(--accent); border-radius: 20px; z-index: 400; padding: 20px; display: none; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         
-        #game-outer { position: relative; padding: 15px; background: var(--panel); border-radius: 15px; margin: 20px 0; touch-action: none; }
-        #grid { display: grid; width: 300px; height: 300px; gap: 5px; position: relative; z-index: 1; }
-        canvas { position: absolute; top: 15px; left: 15px; pointer-events: none; z-index: 5; } /* 線を背景の上、数字の下に */
+        h1 { font-size: 24px; color: #facc15; margin-bottom: 20px; }
+        .menu-btn { width: 220px; padding: 12px; margin: 8px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
         
-        .cell { background: #334155; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; z-index: 10; position: relative; border: 2px solid rgba(255,255,255,0.4); }
-        .rock { font-size: 26px; z-index: 10; position: relative; }
+        /* ゲームレイアウト */
+        #game-content { display: none; flex-direction: column; align-items: center; width: 100%; flex: 1; justify-content: center; }
+        #game-outer { position: relative; padding: 10px; background: var(--panel); border-radius: 15px; touch-action: none; }
+        
+        /* マス目の均等配置 */
+        #grid { display: grid; width: 300px; height: 300px; gap: 4px; position: relative; z-index: 1; }
+        .cell { background: #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        
+        /* 線よりも上にくる要素 */
+        canvas { position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 5; }
+        .dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; z-index: 10; position: relative; border: 2px solid rgba(255,255,255,0.4); background-color: inherit; }
+        .rock { font-size: 26px; z-index: 10; position: relative; background: #334155; border-radius: 50%; }
 
-        .stats-bar { font-size: 16px; color: #facc15; font-weight: bold; display: flex; gap: 20px; }
+        .stats-bar { font-size: 16px; color: #facc15; font-weight: bold; display: flex; gap: 20px; margin-bottom: 10px; }
+        #ad-large-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background:#000; }
+        #ad-close-btn { position: absolute; top: 20px; right: 20px; padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 5px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -40,47 +44,47 @@
 
     <div id="start-screen" class="screen">
         <h1>Number Flow<br>Connect</h1>
-        <p style="font-size:12px; color:#94a3b8; margin-bottom:20px;">※LINEの方は「ブラウザで開く」を推奨</p>
+        <p style="font-size:11px; color:#94a3b8; margin-bottom:15px;">※LINEの方は「ブラウザで開く」を推奨</p>
         <button class="menu-btn" onclick="startGame()" style="background:#22c55e;">START</button>
-        <button class="menu-btn" onclick="showShop()">SHOP</button>
-        <a href="https://saaaachi.github.io/Sort-Master/" class="other-game" target="_blank">Other Games: Sort Master</a>
-        <div class="stats-bar" style="margin-top:30px;">💰 <span id="start-coins">0</span></div>
+        <button class="menu-btn" onclick="openModal('shop-modal')">SHOP</button>
+        <a href="https://saaaachi.github.io/Sort-Master/" style="color:#94a3b8; font-size:12px; margin-top:15px;">Other Games: Sort Master</a>
+        <div class="stats-bar" style="margin-top:20px;">💰 <span id="start-coins">0</span></div>
     </div>
 
-    <div id="shop-screen" class="screen" style="display:none;">
+    <div id="shop-modal" class="modal">
         <h1>SHOP</h1>
-        <div id="shop-items" style="width:100%; max-width:300px;"></div>
-        <button class="menu-btn" onclick="backToStart()" style="background:#64748b;">BACK</button>
+        <div id="shop-list"></div>
+        <button class="menu-btn" onclick="closeModal('shop-modal')" style="background:#64748b; margin-top:15px;">CLOSE</button>
     </div>
 
     <div id="result-screen" class="screen" style="display:none;">
         <h1 id="res-title">CLEARED!</h1>
-        <div style="font-size:24px; margin-bottom:20px;">💰 +<span id="res-coins">0</span></div>
-        <button class="menu-btn" onclick="startGame()" id="next-btn" style="background:#22c55e;">NEXT STAGE</button>
+        <div style="font-size:24px; margin-bottom:20px; color:#facc15;">💰 +<span id="res-coins">0</span></div>
+        <button class="menu-btn" onclick="startGame()" style="background:#22c55e;">NEXT STAGE</button>
         <button class="menu-btn" onclick="backToStart()" style="background:#64748b;">HOME</button>
     </div>
 
     <div id="game-content">
-        <div id="header">
-            <div style="font-weight:bold;">Stage: <span id="ui-stage">1</span></div>
-            <div class="stats-bar">💰 <span id="ui-coins">0</span></div>
+        <div class="stats-bar">
+            <span>Stage: <span id="ui-stage">1</span></span>
+            <span>💰 <span id="ui-coins">0</span></span>
         </div>
         <div id="game-outer">
             <div id="grid"></div>
             <canvas id="line-canvas"></canvas>
         </div>
-        <button class="menu-btn" onclick="initStage()" style="background:#ef4444; width:120px; padding:10px; font-size:14px;">RESET</button>
+        <button class="menu-btn" onclick="initStage()" style="background:#ef4444; width:120px; margin-top:15px; font-size:14px;">RESET</button>
     </div>
 
-    <div id="ad-bottom" class="ad-container"></div>
+    <div id="ad-bottom" class="ad-container" style="opacity:0;"></div>
 
-    <div id="ad-large-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:1000; background:#000;">
+    <div id="ad-large-overlay">
         <iframe id="ad-large-frame" style="width:100%; height:100%; border:none;"></iframe>
-        <button onclick="closeLargeAd()" style="position:absolute; top:20px; right:20px; padding:10px; background:rgba(255,255,255,0.5); border:none; border-radius:5px;">Close [X]</button>
+        <div id="ad-timer" style="position:absolute; top:20px; right:20px; color:white; background:rgba(0,0,0,0.5); padding:10px; border-radius:5px;">5s...</div>
+        <button id="ad-close-btn" onclick="closeLargeAd()">Close [X]</button>
     </div>
 
     <script>
-        // --- データ設定 ---
         const allStages = {
             1: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":0,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":0,"y":4,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"}]},
             2: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":1,"val":3,"color":"#22c55e"},{"x":1,"y":3,"val":3,"color":"#22c55e"}]},
@@ -93,11 +97,8 @@
 
         let user = { coins: 0, sLv: 1, unlockedMaker: false, clearCount: 0 };
         let dots = [], completedPaths = [], currentPath = [], gridSize = 5, isDragging = false, activeColor = null;
+        const ctx = document.getElementById('line-canvas').getContext('2d');
 
-        const canvas = document.getElementById('line-canvas');
-        const ctx = canvas.getContext('2d');
-
-        // --- 初期化 & セーブ ---
         function load() {
             const saved = localStorage.getItem('flow_final_save');
             if(saved) user = Object.assign(user, JSON.parse(saved));
@@ -111,7 +112,27 @@
             document.getElementById('ui-stage').innerText = user.sLv;
         }
 
-        // --- 画面遷移 ---
+        function openModal(id) {
+            if(id === 'shop-modal') {
+                document.getElementById('shop-list').innerHTML = `
+                    <button class="menu-btn" style="background:#8b5cf6; font-size:14px;" onclick="buyMaker()">
+                        ${user.unlockedMaker ? 'MAKER: UNLOCKED' : 'UNLOCK MAKER (5000)'}
+                    </button>
+                    <button class="menu-btn" style="background:#6366f1; font-size:14px; opacity:0.6;">MORE ITEMS (SOON)</button>
+                `;
+            }
+            document.getElementById(id).style.display = 'block';
+        }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function buyMaker() {
+            if(user.unlockedMaker) { window.open('maker.html', '_blank'); return; }
+            if(user.coins >= 5000) {
+                user.coins -= 5000; user.unlockedMaker = true;
+                save(); openModal('shop-modal');
+            } else alert("Not enough coins!");
+        }
+
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('result-screen').style.display = 'none';
@@ -119,49 +140,28 @@
             initStage();
         }
         function backToStart() {
-            document.getElementById('shop-screen').style.display = 'none';
             document.getElementById('result-screen').style.display = 'none';
             document.getElementById('game-content').style.display = 'none';
             document.getElementById('start-screen').style.display = 'flex';
             updateStats();
         }
-        function showShop() {
-            document.getElementById('start-screen').style.display = 'none';
-            const shopDiv = document.getElementById('shop-items');
-            shopDiv.innerHTML = `
-                <div class="menu-btn" style="background:#8b5cf6; font-size:14px;" onclick="buyMaker()">
-                    ${user.unlockedMaker ? 'MAKER: UNLOCKED' : 'UNLOCK MAKER (5000)'}
-                </div>
-                <div class="menu-btn" style="background:#6366f1; font-size:14px;">GHOST MODE (COMING SOON)</div>
-            `;
-            document.getElementById('shop-screen').style.display = 'flex';
-        }
 
-        function buyMaker() {
-            if(user.unlockedMaker) { location.href = 'maker.html'; return; }
-            if(user.coins >= 5000) {
-                user.coins -= 5000; user.unlockedMaker = true;
-                save(); showShop();
-            } else { alert("Not enough coins!"); }
-        }
-
-        // --- ゲームロジック ---
         function initStage() {
             const data = allStages[user.sLv] || allStages[1];
-            gridSize = data.size;
-            dots = data.dots;
+            gridSize = data.size; dots = data.dots;
             completedPaths = []; currentPath = [];
             const grid = document.getElementById('grid');
-            grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
             grid.innerHTML = '';
-            
             dots.forEach(d => {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                cell.style.gridColumnStart = d.x + 1;
-                cell.style.gridRowStart = d.y + 1;
+                cell.style.gridColumnStart = d.x + 1; cell.style.gridRowStart = d.y + 1;
                 if(d.val === 0) cell.innerHTML = '<span class="rock">🪨</span>';
-                else cell.innerHTML = `<div class="dot" style="background:${d.color}">${d.val}</div>`;
+                else {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot'; dot.style.backgroundColor = d.color; dot.innerText = d.val;
+                    cell.appendChild(dot);
+                }
                 grid.appendChild(cell);
             });
             for(let i=0; i<gridSize*gridSize; i++) {
@@ -170,15 +170,9 @@
                     const cell = document.createElement('div'); cell.className = 'cell'; grid.appendChild(cell);
                 }
             }
-            resizeCanvas();
-        }
-
-        function resizeCanvas() {
-            canvas.width = 300; canvas.height = 300;
             draw();
         }
 
-        // --- タッチ操作 (改善版) ---
         function getPos(e) {
             const rect = document.getElementById('grid').getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
@@ -193,8 +187,7 @@
             if(dot) {
                 isDragging = true; activeColor = dot.color;
                 completedPaths = completedPaths.filter(p => dots.find(d => d.x === p[0].x && d.y === p[0].y).color !== activeColor);
-                currentPath = [pos];
-                draw();
+                currentPath = [pos]; draw();
             }
         });
 
@@ -211,10 +204,7 @@
                 } else {
                     currentPath.push(pos);
                     const goal = dots.find(d => d.x === pos.x && d.y === pos.y);
-                    if(goal) {
-                        if(goal.color === activeColor) { completedPaths.push([...currentPath]); isDragging = false; checkClear(); }
-                        else isDragging = false;
-                    }
+                    if(goal && goal.color === activeColor) { completedPaths.push([...currentPath]); isDragging = false; checkClear(); }
                 }
                 draw();
             }
@@ -242,10 +232,8 @@
                 let bonus = 0; completedPaths.forEach(p => bonus += (p.length-2)*10);
                 const total = (completedPaths.length * 100) + bonus;
                 user.coins += total; user.clearCount++;
-                const currentLv = user.sLv;
                 if(allStages[user.sLv + 1]) user.sLv++;
-                save();
-                setTimeout(() => showResult(total, currentLv), 500);
+                save(); setTimeout(() => showResult(total, user.sLv - 1), 500);
             }
         }
 
@@ -257,26 +245,45 @@
             if(user.clearCount === 2 || user.clearCount % 5 === 0) showLargeAd();
         }
 
-        // --- 広告ロジック ---
+        // --- 広告 ---
         function startAdTimer() {
-            let isTop = true;
+            let topActive = true;
+            const topBox = document.getElementById('ad-top');
+            const bottomBox = document.getElementById('ad-bottom');
+            
             setInterval(() => {
-                const target = isTop ? 'ad-top' : 'ad-bottom';
-                const other = isTop ? 'ad-bottom' : 'ad-top';
-                document.getElementById(target).innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
-                document.getElementById(other).innerHTML = '';
-                isTop = !isTop;
+                if(topActive) {
+                    topBox.style.opacity = '0'; bottomBox.style.opacity = '1';
+                    bottomBox.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
+                    setTimeout(() => { topBox.innerHTML = ''; }, 500);
+                } else {
+                    bottomBox.style.opacity = '0'; topBox.style.opacity = '1';
+                    topBox.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
+                    setTimeout(() => { bottomBox.innerHTML = ''; }, 500);
+                }
+                topActive = !topActive;
             }, 30000);
-            document.getElementById('ad-top').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
+            topBox.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
         }
+
         function showLargeAd() {
             document.getElementById('ad-large-frame').src = 'ad.large.html';
             document.getElementById('ad-large-overlay').style.display = 'block';
+            document.getElementById('ad-close-btn').style.display = 'none';
+            let sec = 5;
+            const timerDiv = document.getElementById('ad-timer');
+            timerDiv.style.display = 'block';
+            timerDiv.innerText = sec + "s...";
+            const interval = setInterval(() => {
+                sec--;
+                if(sec <= 0) {
+                    clearInterval(interval);
+                    timerDiv.style.display = 'none';
+                    document.getElementById('ad-close-btn').style.display = 'block';
+                } else timerDiv.innerText = sec + "s...";
+            }, 1000);
         }
-        function closeLargeAd() {
-            document.getElementById('ad-large-overlay').style.display = 'none';
-            document.getElementById('ad-large-frame').src = '';
-        }
+        function closeLargeAd() { document.getElementById('ad-large-overlay').style.display = 'none'; }
 
         window.onload = load;
     </script>
