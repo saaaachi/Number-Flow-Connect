@@ -3,212 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Number Flow Connect</title>
+    <title>Number Flow Connect - Global -</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-        body { background: #0f172a; font-family: sans-serif; overflow: hidden; color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         
-        #header { height: 60px; display: flex; align-items: center; justify-content: center; width: 100%; font-size: 20px; font-weight: bold; color: #facc15; }
+        /* UI Header */
+        #header { width: 100%; padding: 10px; background: var(--panel); border-bottom: 2px solid #334155; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .top-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        .lang-btns { display: flex; gap: 5px; }
+        .lang-btn { padding: 4px 8px; font-size: 10px; border-radius: 4px; border: 1px solid #475569; background: #334155; color: white; }
+        .active-lang { background: var(--accent); border-color: white; }
 
-        #game-container { position: relative; width: 320px; height: 320px; background: #1e293b; border-radius: 8px; padding: 10px; touch-action: none; }
-        #grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); width: 100%; height: 100%; gap: 5px; }
-        .cell { background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; position: relative; z-index: 2; }
-        .dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        /* Game Board */
+        #game-outer { position: relative; margin-top: 20px; padding: 8px; background: var(--panel); border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #grid { display: grid; width: 300px; height: 300px; gap: 4px; position: relative; }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
+        .cell { background: #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+        .dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; z-index: 10; border: 2px solid rgba(255,255,255,0.3); }
+        .rock { font-size: 24px; z-index: 10; }
 
-        canvas { position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 1; }
+        /* Footer & Buttons */
+        #footer { margin-top: auto; width: 100%; padding: 15px; background: var(--panel); border-top: 2px solid #334155; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .stats { font-size: 14px; color: #facc15; font-weight: bold; display: flex; gap: 20px; }
+        .btn-group { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        .btn { padding: 10px 15px; border-radius: 10px; border: none; background: #334155; color: white; font-weight: bold; font-size: 13px; flex: 1; max-width: 100px; cursor: pointer; }
+        .btn-main { background: #22c55e; }
+        .btn-shop { background: #8b5cf6; }
 
-        #footer { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .btn { padding: 12px 30px; border-radius: 25px; border: none; background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
+        /* Overlays */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.95); z-index: 100; display: none; flex-direction: column; align-items: center; padding: 40px 20px; }
+        .shop-card { width: 100%; background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
     </style>
 </head>
 <body>
-    <div id="header">Stage: <span id="ui-stage">1</span></div>
-    
-    <div id="game-container">
+
+    <div id="header">
+        <div class="top-row">
+            <div id="ui-stage-label" style="font-weight: bold;">Stage: <span id="ui-stage">1</span></div>
+            <div class="lang-btns">
+                <button class="lang-btn active-lang" onclick="setLang('ja')">JP</button>
+                <button class="lang-btn" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" onclick="setLang('ko')">KR</button>
+            </div>
+        </div>
+        <div class="stats">
+            <span>💰 <span id="ui-coins">0</span></span>
+            <span>✨ <span id="ui-score">0</span></span>
+        </div>
+    </div>
+
+    <div id="game-outer">
         <div id="grid"></div>
         <canvas id="line-canvas"></canvas>
     </div>
 
     <div id="footer">
-        <div id="status">全てのペアを繋ごう！</div>
-        <button class="btn" onclick="resetStage()">リセット</button>
+        <div id="ui-msg" style="font-size: 12px; color: #94a3b8;">---</div>
+        <div class="btn-group">
+            <button class="btn" onclick="resetStage()" id="btn-reset">RESET</button>
+            <button class="btn btn-shop" onclick="toggleOverlay('shop', true)" id="btn-shop">SHOP</button>
+            <button class="btn btn-main" onclick="toggleOverlay('creator', true)" id="btn-creator">MAKER</button>
+        </div>
+    </div>
+
+    <div id="shop-overlay" class="overlay">
+        <h2 id="shop-title" style="margin-bottom:20px;">SHOP</h2>
+        <div class="shop-card">
+            <div><span id="item-ghost-name">Ghost</span> (3000)</div>
+            <button class="btn btn-shop" onclick="buyItem('ghost')">BUY</button>
+        </div>
+        <div class="shop-card">
+            <div><span id="item-expand-name">Expand</span> (8000)</div>
+            <button class="btn btn-shop" onclick="buyItem('expand')">BUY</button>
+        </div>
+        <button class="btn" style="margin-top:20px; background:#ef4444;" onclick="toggleOverlay('shop', false)">CLOSE</button>
+    </div>
+
+    <div id="creator-overlay" class="overlay">
+        <h2 id="creator-title" style="margin-bottom:20px;">MAKER UNLOCK</h2>
+        <div id="creator-locked">
+            <p style="text-align:center; margin-bottom:20px;" id="creator-msg">Unlock Stage Maker with 5000 coins!</p>
+            <button class="btn btn-main" style="max-width:200px;" onclick="unlockCreator()">UNLOCK (5000)</button>
+        </div>
+        <div id="creator-unlocked" style="display:none; text-align:center;">
+            <p style="margin-bottom:10px;">Paste ID to Play</p>
+            <textarea id="import-id" style="width:100%; height:80px; background:#000; color:#0f0; padding:10px; margin-bottom:10px;"></textarea>
+            <button class="btn btn-main" onclick="loadCustomStage()">PLAY ID</button>
+        </div>
+        <button class="btn" style="margin-top:20px; background:#ef4444;" onclick="toggleOverlay('creator', false)">CLOSE</button>
     </div>
 
     <script>
-        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#facc15', '#a855f7'];
-        let gridSize = 5;
-        let stage = 1;
-        let dots = []; // {x, y, val, color}
-        let currentPath = [];
-        let completedPaths = []; // Array of arrays of {x, y}
-        let isDragging = false;
-        let activeColor = null;
+        // --- Data ---
+        const allStages = {
+            1: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":0,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":0,"y":4,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"}]},
+            2: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":1,"val":3,"color":"#22c55e"},{"x":1,"y":3,"val":3,"color":"#22c55e"}]},
+            3: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":4,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":2,"y":1,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"}]},
+            4: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":4,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":3,"color":"#22c55e"},{"x":1,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":4,"color":"#facc15"},{"x":3,"y":2,"val":4,"color":"#facc15"}]},
+            5: {"size":5,"dots":[{"x":1,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":3,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":2,"y":0,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":4,"color":"#facc15"}]},
+            6: {"size":5,"dots":[{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":3,"y":4,"val":1,"color":"#ef4444"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"},{"x":1,"y":1,"val":4,"color":"#facc15"},{"x":2,"y":1,"val":4,"color":"#facc15"},{"x":3,"y":1,"val":5,"color":"#a855f7"},{"x":4,"y":1,"val":5,"color":"#a855f7"}]}
+        };
 
-        const container = document.getElementById('game-container');
+        const i18n = {
+            ja: { stage: "ステージ", score: "スコア", msg: "同じ数字を繋いでね！", shop: "ショップ", maker: "メーカー解放", close: "閉じる", buy: "購入", locked: "5000コインでメーカーを解放しよう！", ghost: "すり抜け", expand: "盤面拡大", clear: "クリア！" },
+            en: { stage: "Stage", score: "Score", msg: "Connect the same numbers!", shop: "Shop", maker: "Unlock Maker", close: "Close", buy: "Buy", locked: "Unlock Maker for 5000 coins!", ghost: "Ghost", expand: "Expand Grid", clear: "Cleared!" },
+            ko: { stage: "스테이지", score: "점수", msg: "같은 숫자를 연결하세요!", shop: "상점", maker: "메이커 해제", close: "닫기", buy: "구매", locked: "5000코인으로 메이커를 해제하세요!", ghost: "유령", expand: "보드 확장", clear: "클리어!" }
+        };
+
+        // --- State ---
+        let user = { coins: 0, sLv: 1, lang: 'ja', makerUnlocked: false, ghost: 0 };
+        let currentStageData = null;
+        let dots = [], completedPaths = [], currentPath = [], activeColor = null;
+        let isDragging = false, gridSize = 5, isCustom = false;
+
         const gridEl = document.getElementById('grid');
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
 
-        function initStage() {
-            // ステージ1の固定配置例（本来はここで自動生成）
-            dots = [
-                {x: 0, y: 0, val: 1, color: colors[0]}, {x: 4, y: 0, val: 1, color: colors[0]},
-                {x: 0, y: 4, val: 2, color: colors[1]}, {x: 4, y: 4, val: 2, color: colors[1]},
-                {x: 2, y: 1, val: 3, color: colors[2]}, {x: 2, y: 3, val: 3, color: colors[2]}
-            ];
+        // --- Logic ---
+        function load() {
+            const saved = localStorage.getItem('flow_global_save');
+            if(saved) user = Object.assign(user, JSON.parse(saved));
+            setLang(user.lang);
+            initStage();
+        }
+
+        function save() { localStorage.setItem('flow_global_save', JSON.stringify(user)); }
+
+        function setLang(l) {
+            user.lang = l;
+            const t = i18n[l];
+            document.getElementById('ui-stage-label').firstChild.textContent = t.stage + ": ";
+            document.getElementById('ui-msg').innerText = t.msg;
+            document.getElementById('btn-reset').innerText = "RESET";
+            document.getElementById('btn-shop').innerText = t.shop;
+            document.getElementById('btn-creator').innerText = user.makerUnlocked ? "MAKER" : t.maker;
+            document.getElementById('item-ghost-name').innerText = t.ghost;
+            document.getElementById('item-expand-name').innerText = t.expand;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active-lang'));
+            event?.target?.classList?.add('active-lang');
+            save();
+        }
+
+        function initStage(customData = null) {
+            isCustom = !!customData;
+            currentStageData = customData || allStages[user.sLv] || allStages[1];
+            gridSize = currentStageData.size;
+            dots = currentStageData.dots;
             completedPaths = [];
             currentPath = [];
+            
+            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            gridEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
             renderGrid();
             resizeCanvas();
+            updateUI();
         }
 
         function renderGrid() {
             gridEl.innerHTML = '';
-            for (let y = 0; y < gridSize; y++) {
-                for (let x = 0; x < gridSize; x++) {
+            dots.forEach(d => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.gridColumnStart = d.x + 1;
+                cell.style.gridRowStart = d.y + 1;
+                if(d.val === 0) {
+                    cell.innerHTML = '<span class="rock">🪨</span>';
+                } else {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    dot.style.backgroundColor = d.color;
+                    dot.innerText = d.val;
+                    cell.appendChild(dot);
+                }
+                gridEl.appendChild(cell);
+            });
+            // 空セルの補完
+            for(let i=0; i<gridSize*gridSize; i++) {
+                const x = i % gridSize, y = Math.floor(i / gridSize);
+                if(!dots.find(d => d.x === x && d.y === y)) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.dataset.x = x;
-                    cell.dataset.y = y;
-                    const dot = dots.find(d => d.x === x && d.y === y);
-                    if (dot) {
-                        const dotEl = document.createElement('div');
-                        dotEl.className = 'dot';
-                        dotEl.style.backgroundColor = dot.color;
-                        dotEl.innerText = dot.val;
-                        cell.appendChild(dotEl);
-                    }
                     gridEl.appendChild(cell);
                 }
             }
         }
 
-        function resizeCanvas() {
-            canvas.width = 300;
-            canvas.height = 300;
-            drawAll();
+        function updateUI() {
+            document.getElementById('ui-stage').innerText = isCustom ? "???" : user.sLv;
+            document.getElementById('ui-coins').innerText = user.coins;
+            document.getElementById('ui-score').innerText = calculateScore();
+            document.getElementById('creator-locked').style.display = user.makerUnlocked ? 'none' : 'block';
+            document.getElementById('creator-unlocked').style.display = user.makerUnlocked ? 'block' : 'none';
         }
 
-        function getCellFromPos(e) {
+        function calculateScore() {
+            let base = completedPaths.length * 100;
+            let bonus = 0;
+            completedPaths.forEach(p => bonus += (p.length - 2) * 10);
+            return base + bonus;
+        }
+
+        // --- Interaction ---
+        function getPos(e) {
             const rect = gridEl.getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
             const x = Math.floor((touch.clientX - rect.left) / (rect.width / gridSize));
             const y = Math.floor((touch.clientY - rect.top) / (rect.height / gridSize));
-            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) return {x, y};
-            return null;
+            return (x>=0 && x<gridSize && y>=0 && y<gridSize) ? {x, y} : null;
         }
 
-        container.addEventListener('touchstart', startPath);
-        container.addEventListener('touchmove', movePath);
-        window.addEventListener('touchend', endPath);
-
-        function startPath(e) {
-            const pos = getCellFromPos(e);
-            if (!pos) return;
-            const startDot = dots.find(d => d.x === pos.x && d.y === pos.y);
-            if (startDot) {
-                isDragging = true;
-                activeColor = startDot.color;
-                // 既存の同じ色のパスを消す
+        gridEl.addEventListener('touchstart', (e) => {
+            const pos = getPos(e); if(!pos) return;
+            const dot = dots.find(d => d.x === pos.x && d.y === pos.y && d.val !== 0);
+            if(dot) {
+                isDragging = true; activeColor = dot.color;
                 completedPaths = completedPaths.filter(p => dots.find(d => d.x === p[0].x && d.y === p[0].y).color !== activeColor);
                 currentPath = [pos];
-                drawAll();
+                draw();
             }
-        }
+        });
 
-        function movePath(e) {
-            if (!isDragging) return;
-            const pos = getCellFromPos(e);
-            if (!pos) return;
+        gridEl.addEventListener('touchmove', (e) => {
+            if(!isDragging) return;
+            const pos = getPos(e); if(!pos) return;
+            const last = currentPath[currentPath.length-1];
+            if(pos.x === last.x && pos.y === last.y) return;
 
-            const lastPos = currentPath[currentPath.length - 1];
-            if (pos.x === lastPos.x && pos.y === lastPos.y) return;
-
-            // 隣接チェック
-            const dx = Math.abs(pos.x - lastPos.x);
-            const dy = Math.abs(pos.y - lastPos.y);
-            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-                // 他の完成済みパスとの衝突チェック
-                const hitOther = completedPaths.some(path => path.some(p => p.x === pos.x && p.y === pos.y));
-                if (hitOther) return;
-
-                // 自分のパス内での戻り
-                if (currentPath.length > 1) {
-                    const secondLast = currentPath[currentPath.length - 2];
-                    if (pos.x === secondLast.x && pos.y === secondLast.y) {
-                        currentPath.pop();
-                        drawAll();
-                        return;
+            if(Math.abs(pos.x - last.x) + Math.abs(pos.y - last.y) === 1) {
+                if(dots.find(d => d.x === pos.x && d.y === pos.y && d.val === 0)) return;
+                if(completedPaths.some(path => path.some(p => p.x === pos.x && p.y === pos.y))) return;
+                
+                if(currentPath.length > 1 && pos.x === currentPath[currentPath.length-2].x && pos.y === currentPath[currentPath.length-2].y) {
+                    currentPath.pop();
+                } else if(!currentPath.some(p => p.x === pos.x && p.y === pos.y)) {
+                    currentPath.push(pos);
+                    const goal = dots.find(d => d.x === pos.x && d.y === pos.y);
+                    if(goal) {
+                        if(goal.color === activeColor) {
+                            completedPaths.push([...currentPath]);
+                            isDragging = false;
+                            checkClear();
+                        } else { isDragging = false; }
                     }
                 }
-
-                // 自分のパスとの衝突
-                if (currentPath.some(p => p.x === pos.x && p.y === pos.y)) return;
-
-                currentPath.push(pos);
-
-                // ゴール判定
-                const goalDot = dots.find(d => d.x === pos.x && d.y === pos.y);
-                if (goalDot) {
-                    if (goalDot.color === activeColor && currentPath.length > 1) {
-                        completedPaths.push([...currentPath]);
-                        isDragging = false;
-                        checkClear();
-                    } else {
-                        // 違う色のドットにぶつかったらストップ
-                        isDragging = false;
-                    }
-                }
-                drawAll();
+                draw();
             }
-        }
+        });
 
-        function endPath() {
-            isDragging = false;
-            currentPath = [];
-            drawAll();
-        }
+        window.addEventListener('touchend', () => { isDragging = false; currentPath = []; draw(); });
 
-        function drawAll() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const cellSize = canvas.width / gridSize;
-
-            // 完成した線を描画
-            completedPaths.forEach(path => drawPath(path, dots.find(d => d.x === path[0].x && d.y === path[0].y).color));
-            // 現在引き中の線を描画
-            if (currentPath.length > 0) drawPath(currentPath, activeColor);
-        }
-
-        function drawPath(path, color) {
-            const cellSize = canvas.width / gridSize;
-            ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 10;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            path.forEach((p, i) => {
-                const x = p.x * cellSize + cellSize / 2;
-                const y = p.y * cellSize + cellSize / 2;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            const s = canvas.width / gridSize;
+            const drawP = (p, c) => {
+                ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                p.forEach((pt, i) => {
+                    const x = pt.x * s + s/2, y = pt.y * s + s/2;
+                    if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 4; ctx.stroke();
+            };
+            completedPaths.forEach(p => drawP(p, dots.find(d => d.x === p[0].x && d.y === p[0].y).color));
+            if(currentPath.length > 0) drawP(currentPath, activeColor);
         }
 
         function checkClear() {
-            const totalDots = dots.length / 2;
-            if (completedPaths.length === totalDots) {
-                // さらに全マス埋まっているかの判定を入れるとより本格的
-                document.getElementById('status').innerText = "CLEAR! お見事！";
+            const totalPairs = dots.filter(d => d.val !== 0).length / 2;
+            if(completedPaths.length === totalPairs) {
+                const reward = calculateScore();
+                user.coins += reward;
+                document.getElementById('ui-msg').innerText = i18n[user.lang].clear + " +💰" + reward;
+                if(!isCustom) user.sLv++;
+                save(); updateUI();
+                setTimeout(() => initStage(), 1500);
             }
         }
 
-        function resetStage() {
-            initStage();
-            document.getElementById('status').innerText = "全てのペアを繋ごう！";
+        // --- Overlays ---
+        function toggleOverlay(id, show) { document.getElementById(id + '-overlay').style.display = show ? 'flex' : 'none'; }
+        
+        function buyItem(type) {
+            const price = type === 'ghost' ? 3000 : 8000;
+            if(user.coins >= price) { user.coins -= price; save(); updateUI(); alert("Bought!"); }
+            else alert("Need more coins!");
         }
 
-        initStage();
+        function unlockCreator() {
+            if(user.coins >= 5000) {
+                user.coins -= 5000; user.makerUnlocked = true;
+                save(); updateUI(); setLang(user.lang);
+            } else alert("Need more coins!");
+        }
+
+        function loadCustomStage() {
+            try {
+                const data = JSON.parse(document.getElementById('import-id').value);
+                initStage(data);
+                toggleOverlay('creator', false);
+            } catch(e) { alert("Invalid ID"); }
+        }
+
+        function resizeCanvas() { canvas.width = 300; canvas.height = 300; draw(); }
+        function resetStage() { initStage(isCustom ? currentStageData : null); }
+
+        window.onload = load;
     </script>
 </body>
 </html>
