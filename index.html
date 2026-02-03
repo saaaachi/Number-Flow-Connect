@@ -9,148 +9,155 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 広告枠（高さ固定） */
-        .ad-area { width: 100%; height: 65px; background: #000; flex-shrink: 0; display: flex; justify-content: center; align-items: center; z-index: 100; }
+        /* 常に表示される上下広告枠 */
+        .ad-area { width: 100%; height: 65px; background: #000; flex-shrink: 0; display: flex; justify-content: center; align-items: center; z-index: 1000; }
         iframe.ad-frame { width: 100%; height: 100%; border: none; }
 
-        /* スクリーン */
-        .screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; position: relative; }
-        h1 { font-size: 24px; color: #facc15; margin-bottom: 15px; }
-        
-        /* スタート画面のショップ要素 */
-        .shop-container { background: var(--panel); padding: 15px; border-radius: 15px; width: 260px; margin: 15px 0; border: 1px solid #334155; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .buy-btn { padding: 8px 12px; border-radius: 8px; border: none; background: #8b5cf6; color: white; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .buy-btn.unlocked { background: #475569; pointer-events: none; }
+        /* コンテンツ全体のラッパー（広告を除いた残り全部） */
+        .content-wrapper { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; overflow-y: auto; width: 100%; padding: 10px; }
 
-        .menu-btn { width: 220px; padding: 14px; border-radius: 12px; border: none; background: #22c55e; color: white; font-weight: bold; font-size: 18px; cursor: pointer; }
+        /* 各画面の制御 */
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+        .screen.active { display: flex; }
+
+        h1 { font-size: 22px; color: #facc15; margin-bottom: 10px; }
         
-        /* ゲームエリア：正方形を維持 */
-        #game-container { position: relative; width: 300px; height: 300px; background: var(--panel); border-radius: 10px; padding: 5px; }
-        #grid { display: grid; width: 100%; height: 100%; gap: 5px; position: relative; z-index: 10; }
+        /* スタート画面のショップ商品 */
+        .shop-box { background: var(--panel); padding: 12px; border-radius: 12px; width: 90%; max-width: 300px; margin-top: 10px; border: 1px solid #334155; }
+        .item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+        .buy-btn { padding: 6px 10px; border-radius: 6px; border: none; background: #8b5cf6; color: white; cursor: pointer; font-weight: bold; }
+        .buy-btn.unlocked { background: #475569; cursor: default; }
+
+        .main-btn { width: 200px; padding: 12px; border-radius: 12px; border: none; background: #22c55e; color: white; font-weight: bold; font-size: 18px; cursor: pointer; margin: 10px 0; }
+        
+        /* 盤面：アスペクト比を1:1に固定 */
+        #board-area { 
+            position: relative; 
+            width: 100%; 
+            max-width: 320px; 
+            aspect-ratio: 1 / 1; 
+            background: var(--panel); 
+            border-radius: 8px; 
+            padding: 8px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #grid { display: grid; width: 100%; height: 100%; gap: 4px; position: relative; z-index: 10; }
         .cell { background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; }
         
-        /* 線を描くCanvas：グリッドの下に配置 */
-        canvas { position: absolute; top: 5px; left: 5px; pointer-events: none; z-index: 5; }
-
-        /* 数字：円形 & 不透明背景 */
+        /* 数字のデザイン */
         .dot { 
-            width: 85%; height: 85%; border-radius: 50%; 
+            width: 80%; height: 80%; border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; font-size: 20px; 
+            color: white; font-weight: bold; font-size: 18px; 
             z-index: 20; position: relative; 
-            border: 2px solid rgba(255,255,255,0.7);
-            background-color: inherit; /* 各色の背景を保持 */
+            border: 2px solid rgba(255,255,255,0.6);
         }
-
-        .stats { font-size: 18px; color: #facc15; font-weight: bold; margin-bottom: 10px; }
         
-        /* 大画面広告 */
-        #ad-large-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background:#000; }
-        #ad-close-btn { position: absolute; top: 20px; right: 20px; padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; display: none; }
+        canvas { position: absolute; top: 8px; left: 8px; pointer-events: none; z-index: 5; }
+
+        .stats-info { font-size: 16px; color: #facc15; font-weight: bold; margin: 5px 0; }
+
+        /* 大画面広告用 */
+        #ad-large-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background:#000; }
+        #ad-timer { position: absolute; top: 20px; right: 20px; color: white; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 6px; font-weight: bold; }
+        #ad-close { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="ad-top" class="ad-area"></div>
 
-    <div id="start-screen" class="screen">
-        <h1>Number Flow Connect</h1>
-        
-        <div class="stats">💰 <span id="start-coins">0</span></div>
-
-        <button class="menu-btn" onclick="startGame()">START GAME</button>
-
-        <div class="shop-container">
-            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">SHOP (Liberation)</div>
-            <div class="item-row">
-                <span style="font-size:14px;">Maker Mode</span>
-                <button id="buy-maker-btn" class="buy-btn" onclick="buyMaker()">5000 COIN</button>
+    <div class="content-wrapper">
+        <div id="start-screen" class="screen active">
+            <h1>Number Flow Connect</h1>
+            <div class="stats-info">💰 <span id="start-coins">0</span></div>
+            <button class="main-btn" onclick="changeScreen('game-screen'); initStage();">PLAY START</button>
+            
+            <div class="shop-box">
+                <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">SHOP / ITEMS</div>
+                <div class="item">
+                    <span>Creative Mode</span>
+                    <button class="buy-btn" id="shop-maker" onclick="buyItem('maker', 5000)">5000C</button>
+                </div>
+                <div class="item">
+                    <span>Infinite Hints</span>
+                    <button class="buy-btn" id="shop-hints" onclick="buyItem('hints', 3000)">3000C</button>
+                </div>
+                <div class="item">
+                    <span>No Ads (Perm)</span>
+                    <button class="buy-btn" id="shop-noads" onclick="buyItem('noads', 8000)">8000C</button>
+                </div>
             </div>
-            <div style="font-size: 10px; color: #64748b;">※Unlocked maker will open in new tab</div>
+            <a href="https://saaaachi.github.io/Sort-Master/" target="_blank" style="color:#94a3b8; font-size:12px; margin-top:10px;">More Games 🔗</a>
         </div>
 
-        <a href="https://saaaachi.github.io/Sort-Master/" target="_blank" style="color:#94a3b8; font-size:12px; text-decoration: none;">Sort Master 🔗</a>
-    </div>
-
-    <div id="result-screen" class="screen" style="display:none;">
-        <h1 id="res-title">CLEARED!</h1>
-        <div style="font-size:32px; margin-bottom:20px; color:#facc15;">💰 +<span id="res-coins">0</span></div>
-        <button class="menu-btn" onclick="startGame()">NEXT STAGE</button>
-        <button class="menu-btn" onclick="backToStart()" style="background:#64748b; margin-top:10px; font-size:14px;">HOME</button>
-    </div>
-
-    <div id="game-screen" class="screen" style="display:none;">
-        <div class="stats">
-            Lv: <span id="ui-stage">1</span> | 💰 <span id="ui-coins">0</span>
+        <div id="game-screen" class="screen">
+            <div class="stats-info">Lv: <span id="ui-stage">1</span> | 💰 <span id="ui-coins">0</span></div>
+            <div id="board-area">
+                <div id="grid"></div>
+                <canvas id="line-canvas"></canvas>
+            </div>
+            <button onclick="initStage()" style="background:#ef4444; color:white; border:none; padding:10px 20px; border-radius:8px; margin-top:15px; font-weight:bold;">STAGE RESET</button>
         </div>
-        <div id="game-container">
-            <div id="grid"></div>
-            <canvas id="line-canvas" width="290" height="290"></canvas>
+
+        <div id="result-screen" class="screen">
+            <h1 id="res-title">CLEARED!</h1>
+            <div style="font-size:30px; margin:15px 0; color:#facc15;">💰 +<span id="res-coins">0</span></div>
+            <button class="main-btn" onclick="changeScreen('game-screen'); initStage();">NEXT STAGE</button>
+            <button class="main-btn" onclick="changeScreen('start-screen')" style="background:#64748b; font-size:14px;">HOME</button>
         </div>
-        <button onclick="initStage()" style="background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:8px; margin-top:15px; font-weight:bold;">RESET</button>
     </div>
 
-    <div id="ad-bottom" class="ad-area" style="display:none;"></div>
+    <div id="ad-bottom" class="ad-area"></div>
 
     <div id="ad-large-overlay">
         <iframe id="ad-large-frame" style="width:100%; height:100%; border:none;"></iframe>
-        <div id="ad-timer" style="position:absolute; top:20px; right:20px; color:white; background:rgba(0,0,0,0.5); padding:10px;">5s...</div>
-        <button id="ad-close-btn" onclick="closeLargeAd()">CLOSE [X]</button>
+        <div id="ad-timer">5s...</div>
+        <button id="ad-close" onclick="closeLargeAd()">CLOSE [X]</button>
     </div>
 
     <script>
-        // --- 共通データ & セーブ ---
         const allStages = {
             1: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":0,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":0,"y":4,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"}]},
             2: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":1,"val":3,"color":"#22c55e"},{"x":1,"y":3,"val":3,"color":"#22c55e"}]},
-            3: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":4,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":2,"y":1,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"}]},
-            4: {"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":4,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":3,"color":"#22c55e"},{"x":1,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":4,"color":"#facc15"},{"x":3,"y":2,"val":4,"color":"#facc15"}]},
-            5: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":2,"y":2,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":3,"color":"#22c55e"},{"x":4,"y":3,"val":3,"color":"#22c55e"},{"x":0,"y":3,"val":4,"color":"#facc15"},{"x":4,"y":4,"val":4,"color":"#facc15"}]},
-            6: {"size":5,"dots":[{"x":1,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":3,"y":2,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":2,"y":0,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":4,"color":"#facc15"}]},
-            7: {"size":5,"dots":[{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":3,"y":4,"val":1,"color":"#ef4444"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":2,"val":2,"color":"#3b82f6"},{"x":1,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"},{"x":1,"y":1,"val":4,"color":"#facc15"},{"x":2,"y":1,"val":4,"color":"#facc15"},{"x":3,"y":1,"val":5,"color":"#a855f7"},{"x":4,"y":1,"val":5,"color":"#a855f7"}]}
+            3: {"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":4,"val":1,"color":"#ef4444"},{"x":1,"y":1,"val":2,"color":"#3b82f6"},{"x":3,"y":3,"val":2,"color":"#3b82f6"},{"x":2,"y":1,"val":3,"color":"#22c55e"},{"x":3,"y":0,"val":3,"color":"#22c55e"}]}
+            // 以降追加可能
         };
 
-        let user = { coins: 0, sLv: 1, unlockedMaker: false, clearCount: 0 };
+        let user = { coins: 0, sLv: 1, clearCount: 0, maker: false, hints: false, noads: false };
         let dots = [], completedPaths = [], currentPath = [], gridSize = 5, isDragging = false, activeColor = null;
         const ctx = document.getElementById('line-canvas').getContext('2d');
 
         function load() {
-            const saved = localStorage.getItem('flow_final_save');
+            const saved = localStorage.getItem('flow_final_v3');
             if(saved) user = Object.assign(user, JSON.parse(saved));
             updateStats();
-            initAdLoop();
+            startAdSystem();
         }
-        function save() { localStorage.setItem('flow_final_save', JSON.stringify(user)); }
+        function save() { localStorage.setItem('flow_final_v3', JSON.stringify(user)); }
 
         function updateStats() {
             document.getElementById('start-coins').innerText = user.coins;
             document.getElementById('ui-coins').innerText = user.coins;
             document.getElementById('ui-stage').innerText = user.sLv;
-            const btn = document.getElementById('buy-maker-btn');
-            if(user.unlockedMaker) { btn.innerText = "OPENED"; btn.className = "buy-btn unlocked"; }
+            
+            if(user.maker) { document.getElementById('shop-maker').innerText = "OPEN"; document.getElementById('shop-maker').className = "buy-btn unlocked"; }
+            if(user.hints) { document.getElementById('shop-hints').innerText = "ACTIVE"; document.getElementById('shop-hints').className = "buy-btn unlocked"; }
+            if(user.noads) { document.getElementById('shop-noads').innerText = "DONE"; document.getElementById('shop-noads').className = "buy-btn unlocked"; }
         }
 
-        function buyMaker() {
-            if(user.unlockedMaker) { window.open('maker.html', '_blank'); return; }
-            if(user.coins >= 5000) {
-                user.coins -= 5000; user.unlockedMaker = true;
-                save(); updateStats();
-            } else alert("Coin short! Play more!");
+        function buyItem(id, price) {
+            if(user[id]) { if(id === 'maker') window.open('maker.html', '_blank'); return; }
+            if(user.coins >= price) {
+                user.coins -= price; user[id] = true; save(); updateStats();
+            } else { alert("Not enough coins!"); }
         }
 
-        function startGame() {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById('game-screen').style.display = 'flex';
-            initStage();
-        }
-        function backToStart() {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById('start-screen').style.display = 'flex';
-            updateStats();
+        function changeScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
-        // --- ゲームエンジン ---
         function initStage() {
             const data = allStages[user.sLv] || allStages[1];
             gridSize = data.size; dots = data.dots;
@@ -173,9 +180,18 @@
                     const cell = document.createElement('div'); cell.className = 'cell'; grid.appendChild(cell);
                 }
             }
+            setTimeout(resizeCanvas, 50);
+        }
+
+        function resizeCanvas() {
+            const area = document.getElementById('board-area');
+            const side = area.clientWidth - 16;
+            document.getElementById('line-canvas').width = side;
+            document.getElementById('line-canvas').height = side;
             draw();
         }
 
+        // --- タッチロジック ---
         function getPos(e) {
             const rect = document.getElementById('grid').getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
@@ -214,9 +230,10 @@
         window.addEventListener('touchend', () => { isDragging = false; currentPath = []; draw(); });
 
         function draw() {
-            ctx.clearRect(0,0,290,290);
-            const s = 290 / gridSize;
-            const drawL = (p, c) => {
+            const side = document.getElementById('line-canvas').width;
+            ctx.clearRect(0,0,side,side);
+            const s = side / gridSize;
+            const drawLine = (p, c) => {
                 ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 p.forEach((pt, i) => {
                     const x = pt.x * s + s/2; const y = pt.y * s + s/2;
@@ -224,8 +241,8 @@
                 });
                 ctx.stroke();
             };
-            completedPaths.forEach(p => drawL(p, dots.find(d => d.x === p[0].x && d.y === p[0].y).color));
-            if(currentPath.length > 0) drawL(currentPath, activeColor);
+            completedPaths.forEach(p => drawLine(p, dots.find(d => d.x === p[0].x && d.y === p[0].y).color));
+            if(currentPath.length > 0) drawLine(currentPath, activeColor);
         }
 
         function checkClear() {
@@ -238,42 +255,38 @@
                 setTimeout(() => {
                     document.getElementById('res-coins').innerText = gain;
                     document.getElementById('res-title').innerText = "STAGE " + oldLv + " CLEAR!";
-                    document.getElementById('game-screen').style.display = 'none';
-                    document.getElementById('result-screen').style.display = 'flex';
-                    if(user.clearCount === 2 || user.clearCount % 5 === 0) showLargeAd();
+                    changeScreen('result-screen');
+                    if(!user.noads && (user.clearCount === 2 || user.clearCount % 5 === 0)) showLargeAd();
                 }, 500);
             }
         }
 
-        // --- 広告制御 ---
-        function initAdLoop() {
+        // --- 広告システム ---
+        function startAdSystem() {
             const t = document.getElementById('ad-top'), b = document.getElementById('ad-bottom');
             let isTop = true;
-            const updateAd = () => {
-                if(isTop) {
-                    t.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>'; t.style.display = 'flex';
-                    b.innerHTML = ''; b.style.display = 'none';
-                } else {
-                    b.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>'; b.style.display = 'flex';
-                    t.innerHTML = ''; t.style.display = 'none';
-                }
+            const loop = () => {
+                if(isTop) { t.style.visibility = 'visible'; b.style.visibility = 'hidden'; t.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>'; b.innerHTML = ''; }
+                else { b.style.visibility = 'visible'; t.style.visibility = 'hidden'; b.innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>'; t.innerHTML = ''; }
                 isTop = !isTop;
             };
-            updateAd();
-            setInterval(updateAd, 30000);
+            loop();
+            setInterval(loop, 30000);
         }
 
         function showLargeAd() {
             document.getElementById('ad-large-frame').src = 'ad.large.html';
             document.getElementById('ad-large-overlay').style.display = 'block';
-            let sec = 5; const timer = document.getElementById('ad-timer');
-            timer.style.display = 'block'; timer.innerText = sec + "s...";
-            const intv = setInterval(() => {
-                sec--; if(sec<=0) { clearInterval(itv); timer.style.display='none'; document.getElementById('ad-close-btn').style.display='block'; }
-                else timer.innerText = sec + "s...";
+            let s = 5; const timer = document.getElementById('ad-timer'); timer.style.display = 'block';
+            const itv = setInterval(() => {
+                s--; if(s<=0) { clearInterval(itv); timer.style.display='none'; document.getElementById('ad-close').style.display='block'; }
+                else timer.innerText = s + "s...";
             }, 1000);
         }
-        function closeLargeAd() { document.getElementById('ad-large-overlay').style.display = 'none'; document.getElementById('ad-close-btn').style.display = 'none'; }
+        function closeLargeAd() { 
+            document.getElementById('ad-large-overlay').style.display = 'none'; 
+            document.getElementById('ad-close').style.display = 'none'; 
+        }
 
         window.onload = load;
     </script>
