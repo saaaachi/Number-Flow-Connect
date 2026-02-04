@@ -9,20 +9,29 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        .ad-area { width: 100%; height: 60px; background: #000; flex-shrink: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; }
-        iframe.ad-frame { width: 100%; height: 100%; border: none; }
+        /* 広告エリア：標準バナー(320x50)が収まる70px */
+        .ad-area { width: 100%; height: 70px; background: #000; flex-shrink: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        iframe.ad-frame { width: 320px; height: 50px; border: none; }
 
         .content { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
         .screen.active { display: flex; }
 
+        /* 言語切り替え */
+        .lang-bar { margin-bottom: 15px; display: flex; gap: 8px; }
+        .lang-btn { padding: 5px 12px; font-size: 12px; background: #334155; color: white; border: 1px solid #475569; border-radius: 6px; cursor: pointer; }
+        .lang-btn.active { background: #3b82f6; border-color: #60a5fa; }
+
+        /* ショップ */
+        .shop-box { background: var(--panel); border-radius: 12px; width: 280px; padding: 15px; margin-top: 20px; border: 1px solid #334155; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; }
+        .buy-btn { padding: 6px 12px; border-radius: 6px; border: none; background: #8b5cf6; color: white; font-weight: bold; cursor: pointer; }
+
         .back-btn { position: absolute; top: 10px; left: 10px; padding: 8px 12px; background: #334155; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 12px; z-index: 500; }
 
-        /* 盤面：完全に均等なマス目 */
+        /* 盤面 */
         .board-box {
-            position: relative;
-            width: 85vw; height: 85vw;
-            max-width: 350px; max-height: 350px;
+            position: relative; width: 85vw; height: 85vw; max-width: 350px; max-height: 350px;
             background: var(--panel); border-radius: 12px; padding: 8px;
         }
         #grid { 
@@ -32,59 +41,71 @@
             position: relative; z-index: 10; 
         }
         .cell { background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .dot { width: 80%; aspect-ratio: 1/1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; border: 3px solid rgba(255,255,255,0.4); z-index: 30; }
         
-        /* 数字：きれいな正円 */
-        .dot { 
-            width: 80%; aspect-ratio: 1/1; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; font-size: 18px; 
-            border: 3px solid rgba(255,255,255,0.4);
-        }
-        /* ライン：マスの手前に表示 */
         canvas { position: absolute; top: 8px; left: 8px; pointer-events: none; z-index: 20; }
 
-        .btn-main { background: #22c55e; color: white; padding: 15px 40px; border-radius: 12px; border: none; font-size: 20px; font-weight: bold; }
+        .btn-main { background: #22c55e; color: white; padding: 15px 40px; border-radius: 12px; border: none; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #15803d; }
+        .btn-main:active { transform: translateY(2px); box-shadow: none; }
         
-        /* 大広告：余白を詰める */
+        /* 大広告 */
         #ad-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: rgba(0,0,0,0.9); }
-        .ad-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-height: 70%; background: #fff; border-radius: 12px; overflow: hidden; }
-        #ad-close { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; display: none; font-weight: bold; z-index: 2100; }
+        .ad-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: #fff; border-radius: 12px; overflow: hidden; padding: 15px; }
+        #ad-close { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="ad-top" class="ad-area"></div>
     <div class="content">
         <div id="sc-start" class="screen active">
-            <h1 style="color:#facc15; margin-bottom:10px;">Number Flow</h1>
+            <div class="lang-bar">
+                <button class="lang-btn" id="l-jp" onclick="setLang('jp')">JP</button>
+                <button class="lang-btn" id="l-en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" id="l-kr" onclick="setLang('kr')">KR</button>
+            </div>
+            <h1 id="txt-title" style="color:#facc15; margin-bottom:10px;">Number Flow</h1>
             <div style="font-size:20px; color:#facc15; margin-bottom:20px;">💰 <span id="coin-start">0</span></div>
-            <button class="btn-main" onclick="toGame()">PLAY START</button>
+            <button id="txt-start" class="btn-main" onclick="toGame()">PLAY START</button>
+            
+            <div class="shop-box">
+                <div class="shop-item"><span id="txt-item1">Creative Mode</span><button class="buy-btn" onclick="buy(5000)">5000C</button></div>
+                <div class="shop-item"><span id="txt-item2">No Ads</span><button class="buy-btn" onclick="buy(7000)">7000C</button></div>
+            </div>
         </div>
+        
         <div id="sc-game" class="screen">
-            <button class="back-btn" onclick="retire()">← Home (Penalty)</button>
+            <button id="txt-back" class="back-btn" onclick="retire()">← Home</button>
             <div style="margin-bottom:10px;">Lv: <span id="ui-lv">1</span> | 💰 <span id="ui-coin">0</span></div>
             <div class="board-box">
                 <div id="grid"></div>
                 <canvas id="canvas"></canvas>
             </div>
-            <button onclick="initStage()" style="margin-top:15px; padding:8px 20px; background:#ef4444; border:none; color:white; border-radius:8px;">STAGE RESET</button>
+            <button id="txt-reset" onclick="initStage()" style="margin-top:15px; padding:8px 20px; background:#ef4444; border:none; color:white; border-radius:8px; font-weight:bold;">RESET</button>
         </div>
+        
         <div id="sc-res" class="screen">
-            <h1 id="res-title">CLEARED!</h1>
+            <h1 id="txt-clear">CLEARED!</h1>
             <div style="font-size:32px; color:#facc15; margin:20px 0;">💰 +<span id="res-add">0</span></div>
-            <button class="btn-main" onclick="toGame()">NEXT STAGE</button>
+            <button id="txt-next" class="btn-main" onclick="toGame()">NEXT</button>
         </div>
     </div>
     <div id="ad-bottom" class="ad-area"></div>
     <div id="ad-overlay">
         <div class="ad-modal">
-            <iframe id="ad-large-frame" style="width:100%; height:300px; border:none;"></iframe>
+            <div style="color:#333; margin-bottom:10px; font-size:12px; font-weight:bold;">Sponsored</div>
+            <iframe id="ad-large-frame" style="width:100%; height:250px; border:none; background:#eee;"></iframe>
         </div>
-        <div id="ad-timer" style="position:absolute; bottom:20%; width:100%; text-align:center; color:white;">Wait 5s...</div>
+        <div id="ad-timer" style="position:absolute; bottom:20%; width:100%; text-align:center; color:white; font-weight:bold;">Wait 5s...</div>
         <button id="ad-close" onclick="closeAd()">CLOSE [X]</button>
     </div>
 
 <script>
-    // ステージデータ（10個）
+    const DICT = {
+        jp: { title: "ナンバーフロー", start: "スタート", item1: "クリエイティブ", item2: "広告非表示", back: "← 戻る", reset: "リセット", clear: "クリア！", next: "次へ" },
+        en: { title: "Number Flow", start: "PLAY START", item1: "Creative Mode", item2: "No Ads", back: "← Home", reset: "RESET", clear: "CLEARED!", next: "NEXT" },
+        kr: { title: "넘버 플로우", start: "시작하기", item1: "크리에이티브", item2: "광고 제거", back: "← 돌아가기", reset: "리셋", clear: "클리어!", next: "다음" }
+    };
+
     const STAGES = {
         1:{"size":5,"dots":[{"x":0,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":0,"val":1,"color":"#ef4444"},{"x":0,"y":2,"val":2,"color":"#3b82f6"},{"x":4,"y":2,"val":2,"color":"#3b82f6"},{"x":0,"y":4,"val":3,"color":"#22c55e"},{"x":4,"y":4,"val":3,"color":"#22c55e"}]},
         2:{"size":5,"dots":[{"x":2,"y":1,"val":1,"color":"#ef4444"},{"x":2,"y":3,"val":1,"color":"#ef4444"},{"x":0,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":0,"val":2,"color":"#3b82f6"},{"x":1,"y":1,"val":3,"color":"#22c55e"},{"x":1,"y":3,"val":3,"color":"#22c55e"}]},
@@ -98,25 +119,41 @@
         10:{"size":6,"dots":[{"x":1,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":5,"val":1,"color":"#ef4444"},{"x":2,"y":0,"val":2,"color":"#3b82f6"},{"x":4,"y":4,"val":2,"color":"#3b82f6"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":4,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":0,"val":4,"color":"#facc15"},{"x":5,"y":5,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":5,"color":"#a855f7"},{"x":3,"y":5,"val":5,"color":"#a855f7"}]}
     };
 
-    let user = { coins: 0, lv: 1, action: 0 };
+    let user = { coins: 0, lv: 1, action: 0, lang: 'jp', noads: false };
     let dots = [], completed = [], current = [], gridSize = 5, isDrawing = false, activeColor = '';
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+
+    function setLang(l) {
+        user.lang = l;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.id === 'l-' + l));
+        const d = DICT[l];
+        document.getElementById('txt-title').innerText = d.title;
+        document.getElementById('txt-start').innerText = d.start;
+        document.getElementById('txt-item1').innerText = d.item1;
+        document.getElementById('txt-item2').innerText = d.item2;
+        document.getElementById('txt-back').innerText = d.back;
+        document.getElementById('txt-reset').innerText = d.reset;
+        document.getElementById('txt-clear').innerText = d.clear;
+        document.getElementById('txt-next').innerText = d.next;
+        updateUI();
+    }
 
     function updateUI() {
         document.getElementById('coin-start').innerText = user.coins;
         document.getElementById('ui-coin').innerText = user.coins;
         document.getElementById('ui-lv').innerText = user.lv;
-        localStorage.setItem('flow_final_v7', JSON.stringify(user));
+        localStorage.setItem('flow_final_v9', JSON.stringify(user));
     }
 
     function toGame() { show('sc-game'); initStage(); }
     function toHome() { show('sc-start'); updateUI(); }
     function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
+    function buy(price) { if(user.coins >= price) { user.coins -= price; updateUI(); alert("Success!"); } else alert("No Coins!"); }
+
     function retire() {
-        if(confirm("本当に戻りますか？コインが半分になります")) {
-            user.coins = Math.floor(user.coins / 2); adCounter(); toHome();
-        }
+        const msg = user.lang === 'jp' ? "本当に戻りますか？コインが半分になります" : (user.lang === 'kr' ? "정말 돌아가시겠습니까? 코인이 절반이 됩니다" : "Are you sure? Coins will be halved.");
+        if(confirm(msg)) { user.coins = Math.floor(user.coins / 2); adCounter(); toHome(); }
     }
 
     function initStage() {
@@ -155,7 +192,7 @@
 
     document.getElementById('grid').addEventListener('touchstart', (e) => {
         const p = getPos(e); if(!p) return;
-        const d = dots.find(dot => dot.x === p.x && dot.y === p.y && dot.val !== 0);
+        const d = dots.find(dot => dot.x === p.x && dot.y === p.y && d.val !== 0);
         if(d) {
             isDrawing = true; activeColor = d.color;
             completed = completed.filter(path => dots.find(dot => dot.x === path[0].x && dot.y === path[0].y).color !== activeColor);
@@ -185,7 +222,9 @@
         ctx.clearRect(0,0,canvas.width,canvas.height);
         const s = canvas.width / gridSize;
         const line = (path, color) => {
-            ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = canvas.width/10; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.strokeStyle = color; 
+            ctx.lineWidth = canvas.width/22; // ★線をさらに細く調整
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             path.forEach((p, i) => { const x = p.x*s+s/2, y = p.y*s+s/2; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
             ctx.stroke();
         };
@@ -196,7 +235,6 @@
     function check() {
         const connectable = dots.filter(d => d.val !== 0).length / 2;
         if(completed.length === connectable) {
-            // コイン計算：接続数x100 + 全歩数x10
             let totalSteps = 0; completed.forEach(p => totalSteps += p.length);
             const reward = (completed.length * 100) + (totalSteps * 10);
             document.getElementById('res-add').innerText = reward;
@@ -209,7 +247,7 @@
 
     function adCounter() {
         user.action++;
-        if(user.action === 2 || (user.action > 2 && (user.action-2) % 5 === 0)) {
+        if(!user.noads && (user.action === 2 || (user.action > 2 && (user.action-2) % 5 === 0))) {
             document.getElementById('ad-large-frame').src = 'ad.large.html';
             document.getElementById('ad-overlay').style.display = 'block';
             let s = 5; const timer = document.getElementById('ad-timer');
@@ -219,14 +257,14 @@
     function closeAd() { document.getElementById('ad-overlay').style.display='none'; document.getElementById('ad-close').style.display='none'; document.getElementById('ad-timer').style.display='block'; }
 
     window.onload = () => {
-        const s = localStorage.getItem('flow_final_v7');
+        const s = localStorage.getItem('flow_final_v9');
         if(s) user = Object.assign(user, JSON.parse(s));
-        updateUI();
-        // 上下広告の定期更新
-        setInterval(() => {
+        setLang(user.lang);
+        const loadAd = () => {
             document.getElementById('ad-top').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
             document.getElementById('ad-bottom').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
-        }, 30000);
+        };
+        loadAd(); setInterval(loadAd, 30000);
     };
 </script>
 </body>
