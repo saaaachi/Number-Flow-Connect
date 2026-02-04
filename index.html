@@ -9,7 +9,6 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 広告エリア：標準バナー(320x50)が収まる70px */
         .ad-area { width: 100%; height: 70px; background: #000; flex-shrink: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         iframe.ad-frame { width: 320px; height: 50px; border: none; }
 
@@ -17,70 +16,51 @@
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
         .screen.active { display: flex; }
 
-        /* 言語切り替え */
         .lang-bar { margin-bottom: 15px; display: flex; gap: 8px; }
         .lang-btn { padding: 5px 12px; font-size: 12px; background: #334155; color: white; border: 1px solid #475569; border-radius: 6px; cursor: pointer; }
         .lang-btn.active { background: #3b82f6; border-color: #60a5fa; }
 
-        /* ショップ */
-        .shop-box { background: var(--panel); border-radius: 12px; width: 280px; padding: 15px; margin-top: 20px; border: 1px solid #334155; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; }
-        .buy-btn { padding: 6px 12px; border-radius: 6px; border: none; background: #8b5cf6; color: white; font-weight: bold; cursor: pointer; }
+        .shop-box { background: var(--panel); border-radius: 12px; width: 300px; padding: 12px; margin-top: 15px; border: 1px solid #334155; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; }
+        .buy-btn { padding: 5px 10px; border-radius: 6px; border: none; background: #8b5cf6; color: white; font-weight: bold; cursor: pointer; }
 
         .back-btn { position: absolute; top: 10px; left: 10px; padding: 8px 12px; background: #334155; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 12px; z-index: 500; }
 
-        /* 盤面 */
-        .board-box {
-            position: relative; width: 85vw; height: 85vw; max-width: 350px; max-height: 350px;
-            background: var(--panel); border-radius: 12px; padding: 8px;
-        }
-        #grid { 
-            display: grid; width: 100%; height: 100%; gap: 4px; 
-            grid-template-columns: repeat(var(--grid-size, 5), 1fr);
-            grid-template-rows: repeat(var(--grid-size, 5), 1fr);
-            position: relative; z-index: 10; 
-        }
+        .board-box { position: relative; width: 85vw; height: 85vw; max-width: 350px; max-height: 350px; background: var(--panel); border-radius: 12px; padding: 8px; }
+        #grid { display: grid; width: 100%; height: 100%; gap: 4px; grid-template-columns: repeat(var(--grid-size, 5), 1fr); grid-template-rows: repeat(var(--grid-size, 5), 1fr); position: relative; z-index: 10; }
         .cell { background: #334155; border-radius: 4px; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
         .dot { width: 80%; aspect-ratio: 1/1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; border: 3px solid rgba(255,255,255,0.4); z-index: 30; }
-        
         canvas { position: absolute; top: 8px; left: 8px; pointer-events: none; z-index: 20; }
 
-        .btn-main { background: #22c55e; color: white; padding: 15px 40px; border-radius: 12px; border: none; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #15803d; }
-        .btn-main:active { transform: translateY(2px); box-shadow: none; }
+        .btn-main { background: #22c55e; color: white; padding: 15px 40px; border-radius: 12px; border: none; font-size: 20px; font-weight: bold; cursor: pointer; }
         
-        /* 大広告 */
         #ad-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: rgba(0,0,0,0.9); }
-        .ad-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: #fff; border-radius: 12px; overflow: hidden; padding: 15px; }
-        #ad-close { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; display: none; font-weight: bold; }
+        .ad-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: #fff; border-radius: 12px; padding: 15px; }
+        #ad-close { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; display: none; }
     </style>
 </head>
 <body>
     <div id="ad-top" class="ad-area"></div>
     <div class="content">
         <div id="sc-start" class="screen active">
-            <div class="lang-bar">
-                <button class="lang-btn" id="l-jp" onclick="setLang('jp')">JP</button>
-                <button class="lang-btn" id="l-en" onclick="setLang('en')">EN</button>
-                <button class="lang-btn" id="l-kr" onclick="setLang('kr')">KR</button>
-            </div>
-            <h1 id="txt-title" style="color:#facc15; margin-bottom:10px;">Number Flow</h1>
-            <div style="font-size:20px; color:#facc15; margin-bottom:20px;">💰 <span id="coin-start">0</span></div>
+            <div class="lang-bar"><button class="lang-btn" id="l-jp" onclick="setLang('jp')">JP</button><button class="lang-btn" id="l-en" onclick="setLang('en')">EN</button><button class="lang-btn" id="l-kr" onclick="setLang('kr')">KR</button></div>
+            <h1 id="txt-title" style="color:#facc15;">Number Flow</h1>
+            <div style="font-size:20px; color:#facc15; margin:10px 0;">💰 <span id="coin-start">0</span></div>
             <button id="txt-start" class="btn-main" onclick="toGame()">PLAY START</button>
             
             <div class="shop-box">
-                <div class="shop-item"><span id="txt-item1">Creative Mode</span><button class="buy-btn" onclick="buy(5000)">5000C</button></div>
-                <div class="shop-item"><span id="txt-item2">No Ads</span><button class="buy-btn" onclick="buy(7000)">7000C</button></div>
+                <div class="shop-item"><span id="txt-s1">Ghost Mode</span><button class="buy-btn" onclick="buy(5000)">5000C</button></div>
+                <div class="shop-item"><span id="txt-s2">Extra Grid</span><button class="buy-btn" onclick="buy(3000)">3000C</button></div>
+                <div class="shop-item"><span id="txt-s3">Creative Mode</span><button class="buy-btn" onclick="buy(8000)">8000C</button></div>
+                <div class="shop-item"><span id="txt-s4">Hint</span><button class="buy-btn" onclick="buy(1000)">1000C</button></div>
             </div>
         </div>
         
         <div id="sc-game" class="screen">
             <button id="txt-back" class="back-btn" onclick="retire()">← Home</button>
             <div style="margin-bottom:10px;">Lv: <span id="ui-lv">1</span> | 💰 <span id="ui-coin">0</span></div>
-            <div class="board-box">
-                <div id="grid"></div>
-                <canvas id="canvas"></canvas>
-            </div>
-            <button id="txt-reset" onclick="initStage()" style="margin-top:15px; padding:8px 20px; background:#ef4444; border:none; color:white; border-radius:8px; font-weight:bold;">RESET</button>
+            <div class="board-box"><div id="grid"></div><canvas id="canvas"></canvas></div>
+            <button id="txt-reset" onclick="initStage()" style="margin-top:15px; padding:8px 20px; background:#ef4444; border:none; color:white; border-radius:8px;">RESET</button>
         </div>
         
         <div id="sc-res" class="screen">
@@ -90,20 +70,13 @@
         </div>
     </div>
     <div id="ad-bottom" class="ad-area"></div>
-    <div id="ad-overlay">
-        <div class="ad-modal">
-            <div style="color:#333; margin-bottom:10px; font-size:12px; font-weight:bold;">Sponsored</div>
-            <iframe id="ad-large-frame" style="width:100%; height:250px; border:none; background:#eee;"></iframe>
-        </div>
-        <div id="ad-timer" style="position:absolute; bottom:20%; width:100%; text-align:center; color:white; font-weight:bold;">Wait 5s...</div>
-        <button id="ad-close" onclick="closeAd()">CLOSE [X]</button>
-    </div>
+    <div id="ad-overlay"><div class="ad-modal"><iframe id="ad-large-frame" style="width:100%; height:250px; border:none;"></iframe></div><div id="ad-timer" style="position:absolute; bottom:20%; width:100%; text-align:center; color:white;">Wait 5s...</div><button id="ad-close" onclick="closeAd()">CLOSE [X]</button></div>
 
 <script>
     const DICT = {
-        jp: { title: "ナンバーフロー", start: "スタート", item1: "クリエイティブ", item2: "広告非表示", back: "← 戻る", reset: "リセット", clear: "クリア！", next: "次へ" },
-        en: { title: "Number Flow", start: "PLAY START", item1: "Creative Mode", item2: "No Ads", back: "← Home", reset: "RESET", clear: "CLEARED!", next: "NEXT" },
-        kr: { title: "넘버 플로우", start: "시작하기", item1: "크리에이티브", item2: "광고 제거", back: "← 돌아가기", reset: "리셋", clear: "클리어!", next: "다음" }
+        jp: { title: "ナンバーフロー", start: "スタート", s1: "すり抜け", s2: "行列追加", s3: "クリエイティブ", s4: "ヒント", back: "← 戻る", reset: "リセット", clear: "クリア！", next: "次へ" },
+        en: { title: "Number Flow", start: "PLAY START", s1: "Ghost Mode", s2: "Extra Grid", s3: "Creative Mode", s4: "Hint", back: "← Home", reset: "RESET", clear: "CLEARED!", next: "NEXT" },
+        kr: { title: "넘버 플로우", start: "시작하기", s1: "すり抜け(통과)", s2: "행열 추가", s3: "크리에이티브", s4: "힌트", back: "← 돌아가기", reset: "리셋", clear: "클리어!", next: "다음" }
     };
 
     const STAGES = {
@@ -119,7 +92,7 @@
         10:{"size":6,"dots":[{"x":1,"y":0,"val":1,"color":"#ef4444"},{"x":4,"y":5,"val":1,"color":"#ef4444"},{"x":2,"y":0,"val":2,"color":"#3b82f6"},{"x":4,"y":4,"val":2,"color":"#3b82f6"},{"x":3,"y":0,"val":3,"color":"#22c55e"},{"x":4,"y":3,"val":3,"color":"#22c55e"},{"x":4,"y":0,"val":4,"color":"#facc15"},{"x":5,"y":5,"val":4,"color":"#facc15"},{"x":0,"y":0,"val":5,"color":"#a855f7"},{"x":3,"y":5,"val":5,"color":"#a855f7"}]}
     };
 
-    let user = { coins: 0, lv: 1, action: 0, lang: 'jp', noads: false };
+    let user = { coins: 0, lv: 1, action: 0, lang: 'jp' };
     let dots = [], completed = [], current = [], gridSize = 5, isDrawing = false, activeColor = '';
     const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
 
@@ -129,8 +102,10 @@
         const d = DICT[l];
         document.getElementById('txt-title').innerText = d.title;
         document.getElementById('txt-start').innerText = d.start;
-        document.getElementById('txt-item1').innerText = d.item1;
-        document.getElementById('txt-item2').innerText = d.item2;
+        document.getElementById('txt-s1').innerText = d.s1;
+        document.getElementById('txt-s2').innerText = d.s2;
+        document.getElementById('txt-s3').innerText = d.s3;
+        document.getElementById('txt-s4').innerText = d.s4;
         document.getElementById('txt-back').innerText = d.back;
         document.getElementById('txt-reset').innerText = d.reset;
         document.getElementById('txt-clear').innerText = d.clear;
@@ -142,18 +117,17 @@
         document.getElementById('coin-start').innerText = user.coins;
         document.getElementById('ui-coin').innerText = user.coins;
         document.getElementById('ui-lv').innerText = user.lv;
-        localStorage.setItem('flow_final_v9', JSON.stringify(user));
+        localStorage.setItem('flow_final_v10', JSON.stringify(user));
     }
 
     function toGame() { show('sc-game'); initStage(); }
     function toHome() { show('sc-start'); updateUI(); }
     function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    function buy(price) { if(user.coins >= price) { user.coins -= price; updateUI(); alert("Success!"); } else alert("No Coins!"); }
+    function buy(p) { if(user.coins >= p) { user.coins -= p; updateUI(); alert("OK!"); } else alert("No Coins!"); }
 
     function retire() {
-        const msg = user.lang === 'jp' ? "本当に戻りますか？コインが半分になります" : (user.lang === 'kr' ? "정말 돌아가시겠습니까? 코인이 절반이 됩니다" : "Are you sure? Coins will be halved.");
-        if(confirm(msg)) { user.coins = Math.floor(user.coins / 2); adCounter(); toHome(); }
+        if(confirm("Coin 1/2 Penalty?")) { user.coins = Math.floor(user.coins/2); adCounter(); toHome(); }
     }
 
     function initStage() {
@@ -163,14 +137,13 @@
         const grid = document.getElementById('grid');
         grid.style.setProperty('--grid-size', gridSize);
         grid.innerHTML = '';
-
         for(let i=0; i<gridSize*gridSize; i++){
             const cell = document.createElement('div'); cell.className = 'cell';
             const x = i % gridSize, y = Math.floor(i / gridSize);
             const d = dots.find(dot => dot.x === x && dot.y === y);
-            if(d && d.val !== 0) {
+            if(d) {
                 const el = document.createElement('div'); el.className = 'dot';
-                el.style.backgroundColor = d.color; el.innerText = d.val;
+                el.style.backgroundColor = d.color; el.innerText = d.val || '';
                 cell.appendChild(el);
             }
             grid.appendChild(cell);
@@ -190,10 +163,11 @@
         return (x>=0 && x<gridSize && y>=0 && y<gridSize) ? {x,y} : null;
     }
 
+    // ★修正：反応するように修正したイベント
     document.getElementById('grid').addEventListener('touchstart', (e) => {
         const p = getPos(e); if(!p) return;
-        const d = dots.find(dot => dot.x === p.x && dot.y === p.y && d.val !== 0);
-        if(d) {
+        const d = dots.find(dot => dot.x === p.x && dot.y === p.y);
+        if(d && d.val !== 0) { // 数字があるマスを触った時
             isDrawing = true; activeColor = d.color;
             completed = completed.filter(path => dots.find(dot => dot.x === path[0].x && dot.y === path[0].y).color !== activeColor);
             current = [p]; draw();
@@ -222,8 +196,7 @@
         ctx.clearRect(0,0,canvas.width,canvas.height);
         const s = canvas.width / gridSize;
         const line = (path, color) => {
-            ctx.beginPath(); ctx.strokeStyle = color; 
-            ctx.lineWidth = canvas.width/22; // ★線をさらに細く調整
+            ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = canvas.width/22;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             path.forEach((p, i) => { const x = p.x*s+s/2, y = p.y*s+s/2; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
             ctx.stroke();
@@ -233,38 +206,31 @@
     }
 
     function check() {
-        const connectable = dots.filter(d => d.val !== 0).length / 2;
+        const connectable = dots.filter(d => d.val && d.val !== 0).length / 2;
         if(completed.length === connectable) {
             let totalSteps = 0; completed.forEach(p => totalSteps += p.length);
             const reward = (completed.length * 100) + (totalSteps * 10);
             document.getElementById('res-add').innerText = reward;
             user.coins += reward;
             if(STAGES[user.lv+1]) user.lv++;
-            updateUI();
-            setTimeout(() => { show('sc-res'); adCounter(); }, 500);
+            updateUI(); setTimeout(() => { show('sc-res'); adCounter(); }, 500);
         }
     }
 
     function adCounter() {
         user.action++;
-        if(!user.noads && (user.action === 2 || (user.action > 2 && (user.action-2) % 5 === 0))) {
+        if(user.action % 3 === 0) {
             document.getElementById('ad-large-frame').src = 'ad.large.html';
             document.getElementById('ad-overlay').style.display = 'block';
-            let s = 5; const timer = document.getElementById('ad-timer');
-            const itv = setInterval(() => { s--; timer.innerText = "Wait " + s + "s..."; if(s<=0){ clearInterval(itv); timer.style.display='none'; document.getElementById('ad-close').style.display='block'; }}, 1000);
+            let s = 5; const itv = setInterval(() => { s--; document.getElementById('ad-timer').innerText = "Wait "+s+"s..."; if(s<=0){ clearInterval(itv); document.getElementById('ad-close').style.display='block'; }}, 1000);
         }
     }
-    function closeAd() { document.getElementById('ad-overlay').style.display='none'; document.getElementById('ad-close').style.display='none'; document.getElementById('ad-timer').style.display='block'; }
+    function closeAd() { document.getElementById('ad-overlay').style.display='none'; document.getElementById('ad-close').style.display='none'; }
 
     window.onload = () => {
-        const s = localStorage.getItem('flow_final_v9');
+        const s = localStorage.getItem('flow_final_v10');
         if(s) user = Object.assign(user, JSON.parse(s));
-        setLang(user.lang);
-        const loadAd = () => {
-            document.getElementById('ad-top').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
-            document.getElementById('ad-bottom').innerHTML = '<iframe src="ad.html" class="ad-frame"></iframe>';
-        };
-        loadAd(); setInterval(loadAd, 30000);
+        setLang(user.lang); updateUI();
     };
 </script>
 </body>
